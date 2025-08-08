@@ -24,6 +24,8 @@ app-backend/.sts4-cache
 app-backend/application.properties
 app-backend/application-local.properties
 app-backend/application-prod.properties
+app-backend/src/main/resources/application.properties
+**/application.properties
 
 # Allow example files
 !app-backend/application-example.properties
