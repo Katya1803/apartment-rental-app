@@ -1,0 +1,158 @@
+# ===========================================
+# BACKEND (Spring Boot + Maven)
+# ===========================================
+
+# Maven
+app-backend/target/
+app-backend/.mvn/wrapper/maven-wrapper.jar
+!app-backend/**/src/main/**/target/
+!app-backend/**/src/test/**/target/
+
+# IDE - Backend
+app-backend/.idea/
+app-backend/*.iws
+app-backend/*.iml
+app-backend/*.ipr
+app-backend/.settings/
+app-backend/.project
+app-backend/.classpath
+app-backend/.factorypath
+app-backend/.springBeans
+app-backend/.sts4-cache
+
+# Database Configuration - NEVER COMMIT THESE!
+app-backend/application.properties
+app-backend/application-local.properties
+app-backend/application-prod.properties
+
+# Allow example files
+!app-backend/application-example.properties
+!app-backend/application-dev.properties
+
+# Spring Boot
+app-backend/.apt_generated
+app-backend/.apt_generated_tests
+
+# ===========================================
+# FRONTEND (React/Vue/Angular + Node.js)
+# ===========================================
+
+# Dependencies
+app-frontend/node_modules/
+app-frontend/.pnp
+app-frontend/.pnp.js
+
+# Production builds
+app-frontend/build/
+app-frontend/dist/
+app-frontend/out/
+
+# Environment variables - NEVER COMMIT THESE!
+app-frontend/.env
+app-frontend/.env.local
+app-frontend/.env.development.local
+app-frontend/.env.test.local
+app-frontend/.env.production.local
+
+# IDE - Frontend
+app-frontend/.vscode/
+app-frontend/.idea/
+
+# Testing
+app-frontend/coverage/
+
+# Misc
+app-frontend/.DS_Store
+app-frontend/.env.local
+app-frontend/.env.development.local
+app-frontend/.env.test.local
+app-frontend/.env.production.local
+
+# ===========================================
+# SHARED - Both Backend & Frontend
+# ===========================================
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# ===========================================
+# DOCKER & DEPLOYMENT
+# ===========================================
+
+# Docker
+.dockerignore
+*.dockerfile
+docker-compose.override.yml
+
+# Deployment
+.vercel
+.netlify
+
+# ===========================================
+# SECURITY & SECRETS
+# ===========================================
+
+# Never commit these files
+.env
+*.pem
+*.key
+*.crt
+*.p12
+config/secrets.yml
+secrets.json
+
+# ===========================================
+# BACKUP & TEMP FILES
+# ===========================================
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
