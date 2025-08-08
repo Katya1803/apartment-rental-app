@@ -21,4 +21,14 @@ public class TestServiceImpl implements TestService {
     public List<TestAPI> getTestList() {
         return testRepository.findAll();
     }
+
+    @Override
+    public void createData(TestAPI testAPI) {
+        this.testRepository.save(testAPI);
+    }
+
+    @Override
+    public void deleteDataById(Long id) {
+        this.testRepository.deleteById(id);
+    }
 }
