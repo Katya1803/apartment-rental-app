@@ -1,6 +1,6 @@
 package com.katya.app.controller;
 
-import com.katya.app.entity.TestAPI;
+import com.katya.app.model.baseEntity.TestAPI;
 import com.katya.app.service.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

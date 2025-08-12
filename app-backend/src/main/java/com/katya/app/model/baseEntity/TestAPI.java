@@ -1,4 +1,4 @@
-package com.katya.app.entity;
+package com.katya.app.model.baseEntity;
 
 import jakarta.persistence.*;
 import lombok.Data;
