@@ -1,34 +1,40 @@
 package com.katya.app.controller;
 
+import com.katya.app.dto.common.ApiResponse;
 import com.katya.app.model.baseEntity.TestAPI;
 import com.katya.app.service.TestService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.katya.app.util.ResponseBuilder;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/test")
+@RequestMapping("/api/test")
+@RequiredArgsConstructor
 public class TestController {
+
     private final TestService testService;
 
-    @Autowired
-    public TestController(TestService testService) {
-        this.testService = testService;
-    }
-
     @GetMapping
-    public List<TestAPI> getAllTestList() {
-        return this.testService.getTestList();
+    public ResponseEntity<ApiResponse<List<TestAPI>>> getAllTestList() {
+        List<TestAPI> testList = testService.getTestList();
+        return ResponseBuilder.success(testList);
     }
 
     @PostMapping
-    public void addData(@RequestBody TestAPI testAPI) {
-        this.testService.createData(testAPI);
+    public ResponseEntity<ApiResponse<TestAPI>> addData(@Valid @RequestBody TestAPI testAPI) {
+        testService.createData(testAPI);
+        return ResponseBuilder.created(testAPI, "Test data created successfully");
     }
 
     @DeleteMapping("/{id}")
-    public void deleteData(@PathVariable Long id) {
-        this.testService.deleteDataById(id);
+    public ResponseEntity<ApiResponse<String>> deleteData(
+            @PathVariable @NotNull Long id) {
+        testService.deleteDataById(id);
+        return ResponseBuilder.success("Test data deleted successfully");
     }
 }
