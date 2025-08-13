@@ -1,4 +1,4 @@
-package com.katya.app.controller;
+package com.katya.app.controller.admin;
 
 import com.katya.app.dto.common.ApiResponse;
 import com.katya.app.dto.request.LoginRequest;
