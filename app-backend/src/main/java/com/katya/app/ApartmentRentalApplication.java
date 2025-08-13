@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableConfigurationProperties
+@EnableJpaAuditing
 public class ApartmentRentalApplication {
 
 	public static void main(String[] args) {

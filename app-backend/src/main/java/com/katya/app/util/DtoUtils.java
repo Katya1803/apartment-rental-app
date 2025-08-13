@@ -15,8 +15,20 @@ public class DtoUtils {
         }
 
         try {
-            return Locale.fromCode(localeCode.toLowerCase());
-        } catch (IllegalArgumentException e) {
+            String normalizedCode = localeCode.toLowerCase().trim();
+
+            // Direct mapping thay vì dùng enum parsing
+            switch (normalizedCode) {
+                case "vi":
+                    return Locale.VI;
+                case "en":
+                    return Locale.EN;
+                case "ja":
+                    return Locale.JA;
+                default:
+                    return defaultLocale; // Fallback thay vì throw exception
+            }
+        } catch (Exception e) {
             return defaultLocale;
         }
     }

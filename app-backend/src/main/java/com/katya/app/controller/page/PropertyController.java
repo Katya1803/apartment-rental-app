@@ -31,13 +31,12 @@ public class PropertyController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<PropertySummaryResponse>>> getProperties(
             @RequestParam(required = false) String propertyType,
-            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) @ValidLocale String locale,
+            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) String locale,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {
 
         PropertyType type = DtoUtils.parsePropertyType(propertyType);
-        Locale loc = DtoUtils.parseLocale(locale, Locale.VI);
-
+        Locale loc = DtoUtils.parseLocale(locale, Locale.EN);
         Page<PropertySummaryResponse> properties = propertyService.getPublishedProperties(type, loc, page, size);
         return ResponseBuilder.page(properties);
     }
@@ -45,7 +44,7 @@ public class PropertyController {
     @GetMapping("/{slug}")
     public ResponseEntity<ApiResponse<PropertyDetailResponse>> getPropertyBySlug(
             @PathVariable String slug,
-            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) @ValidLocale String locale) {
+            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) String locale) {
 
         Locale loc = DtoUtils.parseLocale(locale, Locale.VI);
         PropertyDetailResponse property = propertyService.getPropertyBySlug(slug, loc);
@@ -55,7 +54,7 @@ public class PropertyController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<PropertySummaryResponse>>> searchProperties(
             @Valid @ModelAttribute PropertySearchRequest request,
-            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) @ValidLocale String locale) {
+            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) String locale) {
 
         request.setLocale(locale);
         Locale loc = DtoUtils.parseLocale(locale, Locale.VI);
@@ -65,7 +64,7 @@ public class PropertyController {
 
     @GetMapping("/featured")
     public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> getFeaturedProperties(
-            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) @ValidLocale String locale) {
+            @RequestParam(required = false, defaultValue = AppConstants.DEFAULT_LOCALE) String locale) {
 
         Locale loc = DtoUtils.parseLocale(locale, Locale.VI);
         List<PropertySummaryResponse> properties = propertyService.getFeaturedProperties(loc);
