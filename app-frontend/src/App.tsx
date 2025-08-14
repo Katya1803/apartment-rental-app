@@ -1,44 +1,56 @@
-import { Box, Container, Typography } from '@mui/material'
-import { useTranslation } from 'react-i18next'
-import { APP_NAME } from './config/constants'
+import { useEffect } from 'react'
+import { Routes, Route } from 'react-router-dom'
+import { Box } from '@mui/material'
+import AdminRoutes from './routes/AdminRoutes'
+import { useAuthStore } from './store/authStore'
+import { STORAGE_KEYS } from './config/constants'
 
 function App() {
-  const { t } = useTranslation()
+  const { isAuthenticated } = useAuthStore()
+
+  useEffect(() => {
+    // Initialize auth state from localStorage on app start
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+    const userStr = localStorage.getItem(STORAGE_KEYS.USER)
+    
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        // Initialize auth store if tokens exist and user data is valid
+        if (user && user.id) {
+          useAuthStore.setState({
+            user,
+            isAuthenticated: true
+          })
+        }
+      } catch (error) {
+        // Clear invalid data if JSON parsing fails
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.USER)
+      }
+    }
+  }, [])
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Container maxWidth="lg" sx={{ flex: 1, py: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom align="center">
-          {APP_NAME}
-        </Typography>
+    <Box sx={{ display: 'flex' }}>
+      <Routes>
+        {/* Admin routes */}
+        <Route path="/admin/*" element={<AdminRoutes />} />
         
-        <Typography variant="h5" component="h2" gutterBottom align="center" color="text.secondary">
-          {t('loading')}...
-        </Typography>
-        
-        <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Frontend Setup Complete! 🎉
-          </Typography>
-          
-          <Typography variant="body1" paragraph>
-            Your React frontend is now configured with:
-          </Typography>
-          
-          <Box component="ul" sx={{ pl: 2 }}>
-            <Typography component="li" variant="body2">✅ Environment configuration (.env)</Typography>
-            <Typography component="li" variant="body2">✅ API connection (Axios)</Typography>
-            <Typography component="li" variant="body2">✅ TypeScript types</Typography>
-            <Typography component="li" variant="body2">✅ Material UI theme</Typography>
-            <Typography component="li" variant="body2">✅ Internationalization (i18n)</Typography>
-            <Typography component="li" variant="body2">✅ Constants and utilities</Typography>
+        {/* Public routes placeholder */}
+        <Route path="/" element={
+          <Box sx={{ p: 4, textAlign: 'center', width: '100vw' }}>
+            <h1>Q Apartment - Public Site</h1>
+            <p>Admin panel is available at <a href="/admin">/admin</a></p>
+            <p>Public site will be developed in next phase.</p>
+            {/* Show current auth status for debugging */}
+            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '20px' }}>
+              Auth Status: {isAuthenticated ? 'Logged in' : 'Not logged in'}
+            </p>
           </Box>
-          
-          <Typography variant="body2" sx={{ mt: 2, p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
-            Ready to start building features! 🚀
-          </Typography>
-        </Box>
-      </Container>
+        } />
+      </Routes>
     </Box>
   )
 }

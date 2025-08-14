@@ -33,15 +33,15 @@ export interface Property {
   title: Record<Locale, string>
   description: Record<Locale, string>
   slug: string
-  propertyType: 'APARTMENT' | 'ROOM'
+  propertyType: 'APARTMENT' | 'ROOM' | 'STUDIO' | 'HOUSE'
   priceRange: {
     min: number
     max: number
   }
   address: Record<Locale, string>
   district: string
-  latitude?: number
-  longitude?: number
+  latitude?: number | null
+  longitude?: number | null
   totalUnits: number
   availableUnits: number
   amenities: Amenity[]

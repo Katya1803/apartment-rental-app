@@ -18,7 +18,7 @@ export const ALLOWED_FILE_TYPES = import.meta.env.VITE_ALLOWED_FILE_TYPES?.split
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
 // Development
-export const DEBUG = import.meta.env.VITE_DEBUG === 'true'
+export const DEBUG = import.meta.env.DEV || import.meta.env.VITE_DEBUG === 'true'
 
 // API Endpoints (matching backend)
 export const API_ENDPOINTS = {

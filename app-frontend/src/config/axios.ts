@@ -1,7 +1,5 @@
-import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { API_BASE_URL, ADMIN_API_BASE_URL, STORAGE_KEYS, DEBUG } from './constants'
-
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { API_BASE_URL, ADMIN_API_BASE_URL, STORAGE_KEYS} from './constants'
 
 // Create axios instances
 export const publicApi: AxiosInstance = axios.create({
@@ -33,7 +31,7 @@ adminApi.interceptors.request.use(
     return config
   },
   (error) => {
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.error('Request error:', error)
     }
     return Promise.reject(error)
@@ -75,7 +73,7 @@ adminApi.interceptors.response.use(
       }
     }
 
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.error('Response error:', error)
     }
     return Promise.reject(error)
@@ -85,13 +83,13 @@ adminApi.interceptors.response.use(
 // Request interceptor for public API (optional logging)
 publicApi.interceptors.request.use(
   (config) => {
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.log('Public API Request:', config)
     }
     return config
   },
   (error) => {
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.error('Public API Request error:', error)
     }
     return Promise.reject(error)
@@ -101,13 +99,13 @@ publicApi.interceptors.request.use(
 // Response interceptor for public API (optional logging)
 publicApi.interceptors.response.use(
   (response) => {
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.log('Public API Response:', response)
     }
     return response
   },
   (error) => {
-    if (DEBUG) {
+    if (import.meta.env.DEV) {
       console.error('Public API Response error:', error)
     }
     return Promise.reject(error)
