@@ -78,18 +78,17 @@ export const ROUTES = {
   GUIDE: '/guide',
   CONTENT: '/content/:slug',
   
-  // Admin routes  
+  // Admin routes
   ADMIN: {
-    ROOT: '/admin',
     LOGIN: '/admin/login',
-    DASHBOARD: '/admin/dashboard',
+    DASHBOARD: '/admin',
     PROPERTIES: '/admin/properties',
-    PROPERTY_NEW: '/admin/properties/new',
+    PROPERTY_CREATE: '/admin/properties/create',
     PROPERTY_EDIT: '/admin/properties/:id/edit',
     MESSAGES: '/admin/messages',
     CONTENT: '/admin/content',
-    SETTINGS: '/admin/settings',
-    USERS: '/admin/users' // Super Admin only
+    USERS: '/admin/users',
+    SETTINGS: '/admin/settings'
   }
 } as const
 

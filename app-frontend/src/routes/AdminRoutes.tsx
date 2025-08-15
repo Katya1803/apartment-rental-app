@@ -2,7 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout'
 import ProtectedRoute from '../components/auth/ProtectedRoute'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore } from '../stores/authStore'
 import { ROUTES } from '../config/constants'
 
 // Lazy load admin components

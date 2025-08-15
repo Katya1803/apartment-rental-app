@@ -28,7 +28,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
+import { useAuthStore } from '../../stores/authStore'
 import { ROUTES, DRAWER_WIDTH, APP_NAME } from '../../config/constants'
 import type { UserRole } from '../../types'
 
