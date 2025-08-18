@@ -35,13 +35,15 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { PropertyService, type PropertyCreateRequest, type PropertyUpdateRequest } from '../../services/propertyService'
 import { AmenityService } from '../../services/amenityService'
 import { ROUTES } from '../../config/constants'
-import type { PropertyDetail, PropertyType, PropertyStatus, Amenity } from '../../types'
+import PropertyImageUpload from '../../components/admin/PropertyImageUpload'
+import GoogleMapPicker from '../../components/admin/GoogleMapPicker'
+import type { PropertyDetail, PropertyType, PropertyStatus, Amenity, PropertyImage } from '../../types'
 
 interface PropertyFormData {
   slug: string
   code?: string
   propertyType: PropertyType
-  priceMonth: number
+  priceMonth: string // ✅ Changed to string to avoid showing 0
   areaSqm?: number
   bedrooms?: number
   bathrooms?: number
@@ -86,12 +88,16 @@ const AdminPropertyForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [currentTab, setCurrentTab] = useState(0)
   const [amenities, setAmenities] = useState<Amenity[]>([])
+  const [images, setImages] = useState<PropertyImage[]>([])
+  
+  // State for validation errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   
   const [formData, setFormData] = useState<PropertyFormData>({
     slug: '',
     code: '',
-    propertyType: 'APARTMENT',
-    priceMonth: 0,
+    propertyType: 'ROOM', // ✅ Fix: Default to ROOM
+    priceMonth: '', // ✅ Fix: Empty string instead of 0
     areaSqm: undefined,
     bedrooms: undefined,
     bathrooms: undefined,
@@ -128,7 +134,7 @@ const AdminPropertyForm: React.FC = () => {
             slug: property.slug,
             code: property.code || '',
             propertyType: property.propertyType,
-            priceMonth: property.priceMonth,
+            priceMonth: property.priceMonth.toString(), // Convert to string
             areaSqm: property.areaSqm || undefined,
             bedrooms: property.bedrooms || undefined,
             bathrooms: property.bathrooms || undefined,
@@ -147,6 +153,9 @@ const AdminPropertyForm: React.FC = () => {
             },
             amenityIds: property.amenities?.map(a => a.id) || []
           })
+
+          // Load images for edit mode
+          setImages(property.images || [])
         }
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -159,12 +168,57 @@ const AdminPropertyForm: React.FC = () => {
     fetchData()
   }, [isEdit, id])
 
-  // Handlers
-  const handleFieldChange = (field: keyof PropertyFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  // Validation functions
+  const validateSlug = (slug: string): string | null => {
+    if (!slug.trim()) return 'Slug is required'
+    if (!/^[a-z0-9-]+$/.test(slug.trim())) {
+      return 'Slug must contain only lowercase letters, numbers, and hyphens'
+    }
+    return null
   }
 
-  const handleTranslationChange = (locale: string, field: string, value: string) => {
+  const validatePrice = (price: string): string | null => {
+    if (!price.trim()) return 'Price is required'
+    const numPrice = parseFloat(price)
+    if (isNaN(numPrice) || numPrice <= 0) {
+      return 'Price must be greater than 0'
+    }
+    return null
+  }
+
+  const validateTranslations = (): string | null => {
+    const hasValidTranslation = Object.values(formData.translations).some(t => t.title.trim())
+    if (!hasValidTranslation) {
+      return 'At least one translation with title is required'
+    }
+    return null
+  }
+
+  // Handle field changes with validation
+  const handleFieldChangeWithValidation = (field: keyof PropertyFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Clear validation error for this field
+    setValidationErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors[field]
+      return newErrors
+    })
+    
+    // Real-time validation
+    let error: string | null = null
+    if (field === 'slug') {
+      error = validateSlug(value)
+    } else if (field === 'priceMonth') {
+      error = validatePrice(value)
+    }
+    
+    if (error) {
+      setValidationErrors(prev => ({ ...prev, [field]: error }))
+    }
+  }
+
+  const handleTranslationChangeWithValidation = (locale: string, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       translations: {
@@ -175,6 +229,15 @@ const AdminPropertyForm: React.FC = () => {
         }
       }
     }))
+    
+    // Clear translation validation error when user types
+    if (field === 'title') {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors['translations']
+        return newErrors
+      })
+    }
   }
 
   const generateSlugFromTitle = () => {
@@ -186,32 +249,70 @@ const AdminPropertyForm: React.FC = () => {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim()
-      handleFieldChange('slug', slug)
+      handleFieldChangeWithValidation('slug', slug)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validation
-    if (!formData.slug.trim()) {
-      setError('Slug is required')
+    // Run all validations
+    const slugError = validateSlug(formData.slug)
+    const priceError = validatePrice(formData.priceMonth)
+    const translationError = validateTranslations()
+    
+    const newValidationErrors: Record<string, string> = {}
+    if (slugError) newValidationErrors.slug = slugError
+    if (priceError) newValidationErrors.priceMonth = priceError
+    if (translationError) newValidationErrors.translations = translationError
+    
+    if (Object.keys(newValidationErrors).length > 0) {
+      setValidationErrors(newValidationErrors)
+      setError('Please fix the validation errors above')
       return
     }
     
-    if (!formData.translations.en.title.trim()) {
-      setError('English title is required')
-      return
-    }
+    const price = parseFloat(formData.priceMonth)
 
     setSaving(true)
     setError(null)
+    setValidationErrors({})
 
     try {
+      // ✅ Fix: Only send translations that have titles and ensure they match backend format
+      const validTranslations = Object.entries(formData.translations)
+        .filter(([_, translation]) => translation.title.trim())
+        .reduce((acc, [locale, translation]) => {
+          acc[locale] = {
+            title: translation.title.trim(),
+            descriptionMd: translation.descriptionMd || undefined,
+            addressText: translation.addressText || undefined
+          }
+          return acc
+        }, {} as any)
+
+      // ✅ Fix: Ensure payload matches backend PropertyCreateRequest exactly
       const payload = {
-        ...formData,
+        slug: formData.slug.trim(),
+        code: formData.code?.trim() || undefined,
+        propertyType: 'ROOM' as PropertyType, // Force ROOM type  
+        priceMonth: price, // Backend expects BigDecimal (number)
+        areaSqm: formData.areaSqm ? parseFloat(formData.areaSqm.toString()) : undefined,
+        bedrooms: formData.bedrooms ? parseInt(formData.bedrooms.toString()) : undefined,
+        bathrooms: formData.bathrooms ? parseInt(formData.bathrooms.toString()) : undefined,
+        floorNo: formData.floorNo ? parseInt(formData.floorNo.toString()) : undefined,
+        petPolicy: formData.petPolicy?.trim() || undefined,
+        viewDesc: formData.viewDesc?.trim() || undefined,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+        addressLine: formData.addressLine?.trim() || undefined,
+        status: formData.status,
+        isFeatured: formData.isFeatured,
+        translations: validTranslations,
         amenityIds: formData.amenityIds.length > 0 ? formData.amenityIds : undefined
       }
+
+      console.log('Sending payload:', JSON.stringify(payload, null, 2)) // Debug log
 
       if (isEdit && id) {
         await PropertyService.updateProperty(parseInt(id), payload)
@@ -222,10 +323,26 @@ const AdminPropertyForm: React.FC = () => {
       navigate(ROUTES.ADMIN.PROPERTIES)
     } catch (error: any) {
       console.error('Failed to save property:', error)
-      setError(error.response?.data?.message || 'Failed to save property')
+      console.error('Error response:', error.response?.data) // Debug log
+      console.error('Validation errors:', error.response?.data?.errors) // Debug validation errors
+      
+      // Show specific validation errors if available
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([field, message]) => `${field}: ${message}`)
+          .join('\n')
+        setError(`Validation errors:\n${errorMessages}`)
+      } else {
+        setError(error.response?.data?.message || 'Failed to save property')
+      }
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleLocationChange = (lat: number, lng: number) => {
+    handleFieldChangeWithValidation('latitude', lat)
+    handleFieldChangeWithValidation('longitude', lng)
   }
 
   const locales = [
@@ -269,10 +386,14 @@ const AdminPropertyForm: React.FC = () => {
         <Card>
           <CardContent>
             {/* Tabs */}
-            <Tabs value={currentTab} onChange={(e, newValue) => setCurrentTab(newValue)}>
+            <Tabs value={currentTab} onChange={(e, newValue) => {
+              console.log('Tab changed to:', newValue)
+              setCurrentTab(newValue)
+            }}>
               <Tab label="Basic Information" />
               <Tab label="Multilingual Content" />
               <Tab label="Location & Amenities" />
+              <Tab label="Images" />
             </Tabs>
 
             {/* Tab 1: Basic Information */}
@@ -283,8 +404,9 @@ const AdminPropertyForm: React.FC = () => {
                     fullWidth
                     label="Slug"
                     value={formData.slug}
-                    onChange={(e) => handleFieldChange('slug', e.target.value)}
-                    helperText="URL-friendly identifier (e.g., luxury-apartment-hanoi)"
+                    onChange={(e) => handleFieldChangeWithValidation('slug', e.target.value)}
+                    helperText={validationErrors.slug || "URL-friendly identifier (e.g., luxury-apartment-hanoi)"}
+                    error={!!validationErrors.slug}
                     required
                     InputProps={{
                       endAdornment: (
@@ -300,25 +422,21 @@ const AdminPropertyForm: React.FC = () => {
                     fullWidth
                     label="Property Code"
                     value={formData.code}
-                    onChange={(e) => handleFieldChange('code', e.target.value)}
+                    onChange={(e) => handleFieldChangeWithValidation('code', e.target.value)}
                     helperText="Internal reference code (optional)"
                   />
                 </Grid>
                 
+                {/* ✅ Fix: Property type disabled and default to ROOM */}
                 <Grid item xs={12} md={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Property Type</InputLabel>
-                    <Select
-                      value={formData.propertyType}
-                      onChange={(e) => handleFieldChange('propertyType', e.target.value)}
-                      label="Property Type"
-                    >
-                      <MenuItem value="APARTMENT">🏢 Apartment</MenuItem>
-                      <MenuItem value="ROOM">🏠 Room</MenuItem>
-                      <MenuItem value="STUDIO">🏙️ Studio</MenuItem>
-                      <MenuItem value="HOUSE">🏘️ House</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    fullWidth
+                    label="Property Type"
+                    value="🏠 Room (Phòng trọ)"
+                    disabled
+                    helperText="System default - Room type only"
+                    InputProps={{ readOnly: true }}
+                  />
                 </Grid>
                 
                 <Grid item xs={12} md={6}>
@@ -326,7 +444,7 @@ const AdminPropertyForm: React.FC = () => {
                     <InputLabel>Status</InputLabel>
                     <Select
                       value={formData.status}
-                      onChange={(e) => handleFieldChange('status', e.target.value)}
+                      onChange={(e) => handleFieldChangeWithValidation('status', e.target.value)}
                       label="Status"
                     >
                       <MenuItem value="DRAFT">📝 Draft</MenuItem>
@@ -336,13 +454,17 @@ const AdminPropertyForm: React.FC = () => {
                   </FormControl>
                 </Grid>
 
+                {/* ✅ Fix: Price input with placeholder, no default 0 */}
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Monthly Price"
                     type="number"
                     value={formData.priceMonth}
-                    onChange={(e) => handleFieldChange('priceMonth', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleFieldChangeWithValidation('priceMonth', e.target.value)}
+                    placeholder="Enter monthly price..."
+                    error={!!validationErrors.priceMonth}
+                    helperText={validationErrors.priceMonth || "Enter price in USD"}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">$</InputAdornment>
                     }}
@@ -356,7 +478,7 @@ const AdminPropertyForm: React.FC = () => {
                     label="Area (sqm)"
                     type="number"
                     value={formData.areaSqm || ''}
-                    onChange={(e) => handleFieldChange('areaSqm', parseFloat(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('areaSqm', parseFloat(e.target.value) || undefined)}
                     InputProps={{
                       endAdornment: <InputAdornment position="end">m²</InputAdornment>
                     }}
@@ -369,7 +491,7 @@ const AdminPropertyForm: React.FC = () => {
                     label="Bedrooms"
                     type="number"
                     value={formData.bedrooms || ''}
-                    onChange={(e) => handleFieldChange('bedrooms', parseInt(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('bedrooms', parseInt(e.target.value) || undefined)}
                     inputProps={{ min: 0, max: 20 }}
                   />
                 </Grid>
@@ -380,7 +502,7 @@ const AdminPropertyForm: React.FC = () => {
                     label="Bathrooms"
                     type="number"
                     value={formData.bathrooms || ''}
-                    onChange={(e) => handleFieldChange('bathrooms', parseInt(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('bathrooms', parseInt(e.target.value) || undefined)}
                     inputProps={{ min: 0, max: 20 }}
                   />
                 </Grid>
@@ -391,7 +513,7 @@ const AdminPropertyForm: React.FC = () => {
                     label="Floor Number"
                     type="number"
                     value={formData.floorNo || ''}
-                    onChange={(e) => handleFieldChange('floorNo', parseInt(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('floorNo', parseInt(e.target.value) || undefined)}
                   />
                 </Grid>
 
@@ -400,7 +522,7 @@ const AdminPropertyForm: React.FC = () => {
                     fullWidth
                     label="Pet Policy"
                     value={formData.petPolicy}
-                    onChange={(e) => handleFieldChange('petPolicy', e.target.value)}
+                    onChange={(e) => handleFieldChangeWithValidation('petPolicy', e.target.value)}
                     helperText="e.g., Pets allowed, No pets, Small pets only"
                   />
                 </Grid>
@@ -410,7 +532,7 @@ const AdminPropertyForm: React.FC = () => {
                     fullWidth
                     label="View Description"
                     value={formData.viewDesc}
-                    onChange={(e) => handleFieldChange('viewDesc', e.target.value)}
+                    onChange={(e) => handleFieldChangeWithValidation('viewDesc', e.target.value)}
                     helperText="e.g., City view, Garden view, Lake view"
                   />
                 </Grid>
@@ -420,7 +542,7 @@ const AdminPropertyForm: React.FC = () => {
                     control={
                       <Switch
                         checked={formData.isFeatured}
-                        onChange={(e) => handleFieldChange('isFeatured', e.target.checked)}
+                        onChange={(e) => handleFieldChangeWithValidation('isFeatured', e.target.checked)}
                       />
                     }
                     label="Featured Property"
@@ -438,7 +560,7 @@ const AdminPropertyForm: React.FC = () => {
                       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <span style={{ fontSize: '1.5rem' }}>{locale.flag}</span>
                         {locale.label}
-                        {locale.code === 'en' && <Chip label="Required" color="error" size="small" />}
+                        {locale.code === 'vi' && <Chip label="Recommended" color="primary" size="small" />}
                       </Typography>
                       
                       <Grid container spacing={2}>
@@ -447,9 +569,9 @@ const AdminPropertyForm: React.FC = () => {
                             fullWidth
                             label="Title"
                             value={formData.translations[locale.code]?.title || ''}
-                            onChange={(e) => handleTranslationChange(locale.code, 'title', e.target.value)}
-                            required={locale.code === 'en'}
-                            helperText={locale.code === 'en' ? 'English title is required' : undefined}
+                            onChange={(e) => handleTranslationChangeWithValidation(locale.code, 'title', e.target.value)}
+                            helperText={locale.code === 'vi' ? (validationErrors.translations || 'Vietnamese title is recommended') : undefined}
+                            error={!!validationErrors.translations && locale.code === 'vi'}
                           />
                         </Grid>
                         
@@ -460,7 +582,7 @@ const AdminPropertyForm: React.FC = () => {
                             multiline
                             rows={4}
                             value={formData.translations[locale.code]?.descriptionMd || ''}
-                            onChange={(e) => handleTranslationChange(locale.code, 'descriptionMd', e.target.value)}
+                            onChange={(e) => handleTranslationChangeWithValidation(locale.code, 'descriptionMd', e.target.value)}
                             helperText="Use Markdown syntax for formatting"
                           />
                         </Grid>
@@ -470,7 +592,7 @@ const AdminPropertyForm: React.FC = () => {
                             fullWidth
                             label="Address Text"
                             value={formData.translations[locale.code]?.addressText || ''}
-                            onChange={(e) => handleTranslationChange(locale.code, 'addressText', e.target.value)}
+                            onChange={(e) => handleTranslationChangeWithValidation(locale.code, 'addressText', e.target.value)}
                             helperText="Human-readable address"
                           />
                         </Grid>
@@ -497,7 +619,7 @@ const AdminPropertyForm: React.FC = () => {
                     fullWidth
                     label="Address Line"
                     value={formData.addressLine}
-                    onChange={(e) => handleFieldChange('addressLine', e.target.value)}
+                    onChange={(e) => handleFieldChangeWithValidation('addressLine', e.target.value)}
                     helperText="Street address, building name, etc."
                   />
                 </Grid>
@@ -508,7 +630,7 @@ const AdminPropertyForm: React.FC = () => {
                     label="Latitude"
                     type="number"
                     value={formData.latitude || ''}
-                    onChange={(e) => handleFieldChange('latitude', parseFloat(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('latitude', parseFloat(e.target.value) || undefined)}
                     inputProps={{ step: 'any', min: -90, max: 90 }}
                     helperText="GPS coordinate (e.g., 21.0285)"
                   />
@@ -520,22 +642,24 @@ const AdminPropertyForm: React.FC = () => {
                     label="Longitude"
                     type="number"
                     value={formData.longitude || ''}
-                    onChange={(e) => handleFieldChange('longitude', parseFloat(e.target.value) || undefined)}
+                    onChange={(e) => handleFieldChangeWithValidation('longitude', parseFloat(e.target.value) || undefined)}
                     inputProps={{ step: 'any', min: -180, max: 180 }}
                     helperText="GPS coordinate (e.g., 105.8542)"
                   />
                 </Grid>
 
-                {/* Google Maps Integration Placeholder */}
+                {/* Google Maps Integration */}
                 <Grid item xs={12}>
-                  <Card variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography color="text.secondary" align="center">
-                      🗺️ Google Maps integration will be added here
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-                      Click on map to set coordinates automatically
-                    </Typography>
-                  </Card>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocationIcon />
+                    Property Location
+                  </Typography>
+                  <GoogleMapPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    onLocationChange={handleLocationChange}
+                    height={350}
+                  />
                 </Grid>
 
                 <Grid item xs={12}>
@@ -557,7 +681,7 @@ const AdminPropertyForm: React.FC = () => {
                     getOptionLabel={(option) => option.label}
                     value={amenities.filter(amenity => formData.amenityIds.includes(amenity.id))}
                     onChange={(event, newValue) => {
-                      handleFieldChange('amenityIds', newValue.map(amenity => amenity.id))
+                      handleFieldChangeWithValidation('amenityIds', newValue.map(amenity => amenity.id))
                     }}
                     renderTags={(value, getTagProps) =>
                       value.map((option, index) => (
@@ -605,6 +729,30 @@ const AdminPropertyForm: React.FC = () => {
               </Grid>
             </TabPanel>
 
+            {/* Tab 4: Images */}
+            <TabPanel value={currentTab} index={3}>
+              {isEdit && id ? (
+                <PropertyImageUpload
+                  propertyId={parseInt(id)}
+                  images={images}
+                  onImagesChange={(newImages) => setImages(newImages)}
+                />
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    📸 Images will be available after creating the property
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Save the property first, then you can upload images in the edit mode.
+                  </Typography>
+                  <Alert severity="info" sx={{ mt: 2, maxWidth: 500, mx: 'auto' }}>
+                    <strong>Tip:</strong> Create the property with basic information first, 
+                    then come back to add images and make it more attractive!
+                  </Alert>
+                </Box>
+              )}
+            </TabPanel>
+
             {/* Form Actions */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
               <Button
@@ -619,6 +767,7 @@ const AdminPropertyForm: React.FC = () => {
                 {currentTab > 0 && (
                   <Button
                     variant="outlined"
+                    type="button"
                     onClick={() => setCurrentTab(currentTab - 1)}
                     disabled={saving}
                   >
@@ -626,10 +775,15 @@ const AdminPropertyForm: React.FC = () => {
                   </Button>
                 )}
                 
-                {currentTab < 2 ? (
+                {currentTab < 3 ? (
                   <Button
                     variant="contained"
-                    onClick={() => setCurrentTab(currentTab + 1)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      console.log('Next clicked, currentTab:', currentTab)
+                      setCurrentTab(currentTab + 1)
+                    }}
                     disabled={saving}
                   >
                     Next

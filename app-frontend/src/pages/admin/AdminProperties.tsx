@@ -65,7 +65,7 @@ const AdminProperties: React.FC = () => {
     try {
       setLoading(true)
       const data: PageResponse<PropertySummary> = await PropertyService.getPropertiesForAdmin(filters, page, 20)
-      setProperties(data.content || [])
+      setProperties(data.items || [])
       setTotalPages(data.totalPages || 0)
       setCurrentPage(data.number || 0)
     } catch (error) {

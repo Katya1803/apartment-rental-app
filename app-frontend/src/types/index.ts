@@ -17,7 +17,7 @@ export interface PageRequest {
 }
 
 export interface PageResponse<T> {
-  content: T[]
+  items: T[]
   totalElements: number
   totalPages: number
   size: number

@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
       
       // Load all published properties (limit 12 for homepage)
       const response = await PropertyService.getPublishedProperties(undefined, locale, 0, 12)
-      setProperties(response.content || [])
+      setProperties(response.items || [])
       
     } catch (err) {
       console.error('Failed to load properties:', err)
