@@ -1,87 +1,288 @@
-// src/pages/public/HomePage.tsx
+// src/pages/public/HomePage.tsx - VIẾT LẠI CLEAN
 import React, { useState, useEffect } from 'react'
 import {
+  Box,
   Container,
   Typography,
-  Box,
   Grid,
   Card,
   CardContent,
   CardMedia,
   Button,
-  TextField,
-  InputAdornment,
+  IconButton,
   Chip,
-  Alert,
-  Skeleton
+  Stack,
+  Skeleton,
+  Alert
 } from '@mui/material'
 import {
-  Search as SearchIcon,
-  LocationOn as LocationIcon,
   Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon
+  FavoriteBorder as FavoriteBorderIcon,
+  LocationOn as LocationIcon,
+  AspectRatio as AreaIcon,
+  Bed as BedIcon,
+  Shower as BathIcon
 } from '@mui/icons-material'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { PropertyService } from '../../services/propertyService'
-import { FavouriteService } from '../../services/favouriteService'
-import { useLocale } from '../../hooks/useLocale'
-import { formatPrice, getPropertyTypeLabel } from '../../utils/formatters'
+import { FavoritesService } from '../../services/favoritesService'
 import { ROUTES } from '../../config/constants'
-import type { PropertySummary } from '../../types'
+import type { PropertySummary, Locale } from '../../types'
 
 const HomePage: React.FC = () => {
-  const { t } = useTranslation()
   const navigate = useNavigate()
-  const { currentLocale } = useLocale()
+  const { t, i18n } = useTranslation()
   
-  const [featuredProperties, setFeaturedProperties] = useState<PropertySummary[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  // Simple state
+  const [properties, setProperties] = useState<PropertySummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [favourites, setFavourites] = useState<number[]>([])
+  const [favorites, setFavorites] = useState<number[]>([])
 
+  // Load properties
   useEffect(() => {
-    loadFeaturedProperties()
-    loadFavourites()
-  }, [currentLocale])
+    loadProperties()
+  }, [i18n.language])
 
-  const loadFeaturedProperties = async () => {
+  // Load favorites
+  useEffect(() => {
+    loadFavorites()
+    const handleStorageChange = () => loadFavorites()
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  const loadProperties = async () => {
     try {
       setLoading(true)
       setError(null)
-      const properties = await PropertyService.getFeaturedProperties(currentLocale)
-      setFeaturedProperties(properties)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load properties')
+      
+      const locale = i18n.language as Locale
+      
+      // Load all published properties (limit 12 for homepage)
+      const response = await PropertyService.getPublishedProperties(undefined, locale, 0, 12)
+      setProperties(response.content || [])
+      
+    } catch (err) {
+      console.error('Failed to load properties:', err)
+      setError('Failed to load properties')
+      setProperties([])
     } finally {
       setLoading(false)
     }
   }
 
-  const loadFavourites = () => {
-    setFavourites(FavouriteService.getFavouriteIds())
+  const loadFavorites = () => {
+    setFavorites(FavoritesService.getFavorites())
   }
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(searchQuery.trim())}`)
-    }
-  }
-
-  const handleSearchKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      handleSearch()
-    }
-  }
-
-  const toggleFavourite = (propertyId: number) => {
-    FavouriteService.toggleFavourite(propertyId)
-    loadFavourites()
+  const handleFavoriteToggle = (propertyId: number, event: React.MouseEvent) => {
+    event.stopPropagation()
+    FavoritesService.toggleFavorite(propertyId)
+    loadFavorites()
   }
 
   const handlePropertyClick = (slug: string) => {
     navigate(`/properties/${slug}`)
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(price)
+  }
+
+  const getPropertyTypeLabel = (type: string) => {
+    const labels = {
+      APARTMENT: 'Apartment',
+      ROOM: 'Room', 
+      STUDIO: 'Studio',
+      HOUSE: 'House'
+    }
+    return labels[type as keyof typeof labels] || type
+  }
+
+  const getPropertyTypeIcon = (type: string) => {
+    const icons = {
+      APARTMENT: '🏢',
+      ROOM: '🏠',
+      STUDIO: '🏙️', 
+      HOUSE: '🏘️'
+    }
+    return icons[type as keyof typeof icons] || '🏠'
+  }
+
+  // Loading skeleton
+  const LoadingSkeleton = () => (
+    <Grid container spacing={3}>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Grid item xs={12} sm={6} md={4} key={index}>
+          <Card>
+            <Skeleton variant="rectangular" height={240} />
+            <CardContent>
+              <Skeleton variant="text" height={32} />
+              <Skeleton variant="text" height={20} />
+              <Skeleton variant="text" height={20} />
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Skeleton variant="rounded" width={60} height={24} />
+                <Skeleton variant="rounded" width={80} height={24} />
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  )
+
+  // Property card component
+  const PropertyCard = ({ property }: { property: PropertySummary }) => {
+    const isFavorite = favorites.includes(property.id)
+
+    return (
+      <Card 
+        sx={{ 
+          height: '100%',
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+          '&:hover': { transform: 'translateY(-2px)' }
+        }}
+        onClick={() => handlePropertyClick(property.slug)}
+      >
+        {/* Image */}
+        <Box sx={{ position: 'relative', height: 240 }}>
+          {property.coverImageUrl ? (
+            <CardMedia
+              component="img"
+              height="240"
+              image={property.coverImageUrl}
+              alt={property.title || 'Property'}
+              sx={{ objectFit: 'cover' }}
+            />
+          ) : (
+            <Box sx={{
+              height: 240,
+              bgcolor: 'grey.200',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '3rem'
+            }}>
+              {getPropertyTypeIcon(property.propertyType)}
+            </Box>
+          )}
+
+          {/* Property type badge */}
+          <Chip
+            label={getPropertyTypeLabel(property.propertyType)}
+            size="small"
+            sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              left: 8,
+              bgcolor: 'rgba(255,255,255,0.9)'
+            }}
+          />
+
+          {/* Featured badge */}
+          {property.isFeatured && (
+            <Chip
+              label="Featured"
+              color="primary"
+              size="small"
+              sx={{ position: 'absolute', top: 8, right: 48 }}
+            />
+          )}
+
+          {/* Favorite button */}
+          <IconButton
+            onClick={(e) => handleFavoriteToggle(property.id, e)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              bgcolor: 'rgba(255,255,255,0.8)'
+            }}
+          >
+            {isFavorite ? (
+              <FavoriteIcon color="error" />
+            ) : (
+              <FavoriteBorderIcon />
+            )}
+          </IconButton>
+        </Box>
+
+        <CardContent>
+          {/* Title */}
+          <Typography variant="h6" gutterBottom noWrap>
+            {property.title || `Property ${property.id}`}
+          </Typography>
+
+          {/* Description */}
+          {property.shortDescription && (
+            <Typography 
+              variant="body2" 
+              color="text.secondary" 
+              sx={{ 
+                mb: 2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical'
+              }}
+            >
+              {property.shortDescription}
+            </Typography>
+          )}
+
+          {/* Property details */}
+          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+            {property.areaSqm && (
+              <Chip
+                icon={<AreaIcon />}
+                label={`${property.areaSqm}m²`}
+                size="small"
+                variant="outlined"
+              />
+            )}
+            {property.bedrooms && property.bedrooms > 0 && (
+              <Chip
+                icon={<BedIcon />}
+                label={`${property.bedrooms} bed`}
+                size="small"
+                variant="outlined"
+              />
+            )}
+            {property.bathrooms && property.bathrooms > 0 && (
+              <Chip
+                icon={<BathIcon />}
+                label={`${property.bathrooms} bath`}
+                size="small"
+                variant="outlined"
+              />
+            )}
+          </Stack>
+
+          {/* Price */}
+          <Typography variant="h6" color="primary" fontWeight="bold" gutterBottom>
+            {formatPrice(property.priceMonth)}/month
+          </Typography>
+
+          {/* Address */}
+          {property.addressText && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <LocationIcon fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary" noWrap>
+                {property.addressText}
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -96,360 +297,65 @@ const HomePage: React.FC = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="h2" component="h1" gutterBottom fontWeight="bold">
-                {t('home')}
-              </Typography>
-              <Typography variant="h5" paragraph sx={{ opacity: 0.9 }}>
-                Find your perfect apartment or room in Vietnam
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.8, mb: 4 }}>
-                Browse thousands of verified properties with multilingual support
-              </Typography>
-              
-              {/* Search Bar */}
-              <Box sx={{ maxWidth: 500 }}>
-                <TextField
-                  fullWidth
-                  placeholder={t('searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleSearchKeyPress}
-                  sx={{
-                    bgcolor: 'white',
-                    borderRadius: 1,
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { border: 'none' }
-                    }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Button
-                          variant="contained"
-                          onClick={handleSearch}
-                          sx={{ minWidth: 'auto', px: 3 }}
-                        >
-                          {t('search')}
-                        </Button>
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Box
-                component="img"
-                src="/hero-image.jpg"
-                alt="Vietnam apartments"
-                sx={{
-                  width: '100%',
-                  height: 300,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                  display: { xs: 'none', md: 'block' }
-                }}
-                onError={(e) => {
-                  // Hide image if not found
-                  (e.target as HTMLImageElement).style.display = 'none'
-                }}
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h2" component="h1" gutterBottom fontWeight="bold">
+              Find Your Perfect Home
+            </Typography>
+            <Typography variant="h5" paragraph sx={{ opacity: 0.9 }}>
+              Quality apartments and rooms in Vietnam
+            </Typography>
+            <Typography variant="body1" sx={{ opacity: 0.8 }}>
+              Browse verified properties with multilingual support
+            </Typography>
+          </Box>
         </Container>
       </Box>
 
-      {/* Quick Links */}
+      {/* Properties Section */}
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              sx={{ 
-                textAlign: 'center', 
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-              onClick={() => navigate(ROUTES.PROPERTIES)}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  🏢 {t('apartments')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Full apartments for rent
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              sx={{ 
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-              onClick={() => navigate(ROUTES.ROOMS)}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  🏠 {t('rooms')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Individual rooms for rent
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              sx={{ 
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-              onClick={() => navigate(ROUTES.FAVOURITES)}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  ❤️ {t('favourites')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Your saved properties
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              sx={{ 
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-              onClick={() => navigate(ROUTES.CONTACT)}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  📞 {t('contact')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Get help and support
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* Featured Properties */}
-      <Container maxWidth="lg" sx={{ pb: 6 }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h2" gutterBottom>
-            {t('featured')} {t('properties')}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Discover our handpicked premium properties
-          </Typography>
-        </Box>
-
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 4 }}>
             {error}
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          {loading ? (
-            // Loading Skeletons
-            [...Array(6)].map((_, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card>
-                  <Skeleton variant="rectangular" height={200} />
-                  <CardContent>
-                    <Skeleton variant="text" height={32} />
-                    <Skeleton variant="text" height={24} />
-                    <Skeleton variant="text" height={20} width="60%" />
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))
-          ) : featuredProperties.length === 0 ? (
-            <Grid item xs={12}>
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="h6" color="text.secondary">
-                  {t('noPropertiesFound')}
-                </Typography>
-              </Box>
-            </Grid>
-          ) : (
-            featuredProperties.map((property) => (
-              <Grid item xs={12} sm={6} md={4} key={property.id}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': { 
-                      transform: 'translateY(-4px)',
-                      boxShadow: 4
-                    }
-                  }}
-                  onClick={() => handlePropertyClick(property.slug)}
-                >
-                  <Box sx={{ position: 'relative' }}>
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={property.coverImageUrl || '/placeholder-property.jpg'}
-                      alt={property.title}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-property.jpg'
-                      }}
-                    />
-                    
-                    {/* Favourite Button */}
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        bgcolor: 'white',
-                        borderRadius: '50%',
-                        p: 0.5,
-                        cursor: 'pointer',
-                        boxShadow: 1
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleFavourite(property.id)
-                      }}
-                    >
-                      {favourites.includes(property.id) ? (
-                        <FavoriteIcon color="error" />
-                      ) : (
-                        <FavoriteBorderIcon />
-                      )}
-                    </Box>
+        <Typography variant="h4" component="h2" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
+          Available Properties
+        </Typography>
 
-                    {/* Property Type Badge */}
-                    <Chip
-                      label={getPropertyTypeLabel(property.propertyType, currentLocale)}
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        left: 8,
-                        bgcolor: 'primary.main',
-                        color: 'white'
-                      }}
-                    />
-
-                    {/* Featured Badge */}
-                    {property.isFeatured && (
-                      <Chip
-                        label="⭐ Featured"
-                        size="small"
-                        sx={{
-                          position: 'absolute',
-                          bottom: 8,
-                          left: 8,
-                          bgcolor: 'warning.main',
-                          color: 'white'
-                        }}
-                      />
-                    )}
-                  </Box>
-
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" component="h3" gutterBottom noWrap>
-                      {property.title}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <LocationIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary" noWrap sx={{ ml: 0.5 }}>
-                        {property.addressText}
-                      </Typography>
-                    </Box>
-
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      {formatPrice(property.priceMonth, currentLocale)} {t('vnd')}/{t('perMonth')}
-                    </Typography>
-
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {property.areaSqm && (
-                        <Chip 
-                          label={`${property.areaSqm} ${t('sqm')}`} 
-                          size="small" 
-                          variant="outlined" 
-                        />
-                      )}
-                      {property.bedrooms && (
-                        <Chip 
-                          label={`${property.bedrooms} ${t('bedrooms')}`} 
-                          size="small" 
-                          variant="outlined" 
-                        />
-                      )}
-                      {property.bathrooms && (
-                        <Chip 
-                          label={`${property.bathrooms} ${t('bathrooms')}`} 
-                          size="small" 
-                          variant="outlined" 
-                        />
-                      )}
-                    </Box>
-
-                    {property.shortDescription && (
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary" 
-                        sx={{ 
-                          mt: 1,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        {property.shortDescription}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))
-          )}
-        </Grid>
-
-        {/* View All Button */}
-        {featuredProperties.length > 0 && (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => navigate(ROUTES.PROPERTIES)}
-            >
-              View All Properties
-            </Button>
+        {loading ? (
+          <LoadingSkeleton />
+        ) : properties.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No properties available
+            </Typography>
+            <Typography color="text.secondary">
+              Please check back later or contact us for more information.
+            </Typography>
           </Box>
+        ) : (
+          <>
+            <Grid container spacing={3}>
+              {properties.map((property) => (
+                <Grid item xs={12} sm={6} md={4} key={property.id}>
+                  <PropertyCard property={property} />
+                </Grid>
+              ))}
+            </Grid>
+
+            {/* View All Button */}
+            <Box sx={{ textAlign: 'center', mt: 6 }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate(ROUTES.PROPERTIES)}
+                sx={{ px: 4, py: 1.5 }}
+              >
+                View All Properties
+              </Button>
+            </Box>
+          </>
         )}
       </Container>
     </Box>

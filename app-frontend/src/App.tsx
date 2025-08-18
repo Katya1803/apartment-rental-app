@@ -1,4 +1,4 @@
-// src/App.tsx - REPLACE TOÀN BỘ FILE NÀY
+// src/App.tsx - Updated to use new structure
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ThemeProvider, CssBaseline } from '@mui/material'
@@ -33,12 +33,6 @@ const LoadingSpinner: React.FC = () => (
       marginBottom: 16
     }} />
     <p style={{ color: '#666' }}>Loading...</p>
-    <style>{`
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `}</style>
   </div>
 )
 

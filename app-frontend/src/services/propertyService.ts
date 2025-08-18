@@ -85,15 +85,15 @@ export class PropertyService {
   
   // Get published properties
   static async getPublishedProperties(
-    propertyType?: PropertyType,
-    locale: Locale = 'en',
+    propertyType?: string,
+    locale: Locale = 'vi',
     page: number = 0,
     size: number = 20
   ): Promise<PageResponse<PropertySummary>> {
     const params = new URLSearchParams({
+      locale,
       page: page.toString(),
-      size: size.toString(),
-      locale
+      size: size.toString()
     })
 
     if (propertyType) {
@@ -108,7 +108,7 @@ export class PropertyService {
   }
 
   // Get property by slug
-  static async getPropertyBySlug(slug: string, locale: Locale = 'en'): Promise<PropertyDetail> {
+  static async getPropertyBySlug(slug: string, locale: Locale = 'vi'): Promise<PropertyDetail> {
     const response = await publicApi.get<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.PROPERTIES}/${slug}?locale=${locale}`
     )
@@ -116,29 +116,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  // Search properties
-  static async searchProperties(
-    filters: PropertyFilters,
-    locale: Locale = 'en'
-  ): Promise<PageResponse<PropertySummary>> {
-    const params = new URLSearchParams({ locale })
-
-    // Add filters to params
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, value.toString())
-      }
-    })
-
-    const response = await publicApi.get<ApiResponse<PageResponse<PropertySummary>>>(
-      `${API_ENDPOINTS.PROPERTIES}/search?${params}`
-    )
-    
-    return response.data.data
-  }
-
   // Get featured properties
-  static async getFeaturedProperties(locale: Locale = 'en'): Promise<PropertySummary[]> {
+  static async getFeaturedProperties(locale: Locale = 'vi'): Promise<PropertySummary[]> {
     const response = await publicApi.get<ApiResponse<PropertySummary[]>>(
       `${API_ENDPOINTS.PROPERTIES}/featured?locale=${locale}`
     )
