@@ -1,21 +1,26 @@
 import React from 'react'
-import { Container, Typography, Box } from '@mui/material'
+import { Container, Typography, Box, Paper } from '@mui/material'
+import { ContactMail as ContactIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 
 const ContactPage: React.FC = () => {
   const { t } = useTranslation()
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {t('contact')}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ContactIcon />
+        {t('contactUs')}
+      </Typography>
+      
+      <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          {t('comingSoon')}
         </Typography>
-        
-        <Typography variant="body1" color="text.secondary">
-          Contact page coming soon...
+        <Typography color="text.secondary">
+          Contact form and company information coming soon...
         </Typography>
-      </Box>
+      </Paper>
     </Container>
   )
 }
