@@ -1,29 +1,101 @@
+// src/services/propertyService.ts - Updated to match backend API
 import { publicApi, adminApi } from '../config/axios'
 import { API_ENDPOINTS } from '../config/constants'
 import type { 
   PropertySummary, 
   PropertyDetail, 
-  PropertyFilters,
   ApiResponse, 
-  PageResponse,
+  PageResponse, 
+  PropertyType,
+  PropertyStatus,
   Locale 
 } from '../types'
 
+// Interface for filters (matching backend PropertySearchRequest)
+export interface PropertyFilters {
+  query?: string
+  propertyType?: PropertyType
+  status?: PropertyStatus
+  minPrice?: number
+  maxPrice?: number
+  minArea?: number
+  maxArea?: number
+  minBedrooms?: number
+  maxBedrooms?: number
+  isFeatured?: boolean
+}
+
+// Interface for property create request (matching backend PropertyCreateRequest)
+export interface PropertyCreateRequest {
+  slug: string
+  code?: string
+  propertyType: PropertyType
+  priceMonth: number
+  areaSqm?: number
+  bedrooms?: number
+  bathrooms?: number
+  floorNo?: number
+  petPolicy?: string
+  viewDesc?: string
+  latitude?: number
+  longitude?: number
+  addressLine?: string
+  status: PropertyStatus
+  isFeatured: boolean
+  translations: {
+    [locale: string]: {
+      title: string
+      descriptionMd: string
+      addressText: string
+    }
+  }
+  amenityIds?: number[]
+}
+
+// Interface for property update request (matching backend PropertyUpdateRequest)
+export interface PropertyUpdateRequest {
+  slug?: string
+  code?: string
+  propertyType?: PropertyType
+  priceMonth?: number
+  areaSqm?: number
+  bedrooms?: number
+  bathrooms?: number
+  floorNo?: number
+  petPolicy?: string
+  viewDesc?: string
+  latitude?: number
+  longitude?: number
+  addressLine?: string
+  status?: PropertyStatus
+  isFeatured?: boolean
+  translations?: {
+    [locale: string]: {
+      title: string
+      descriptionMd: string
+      addressText: string
+    }
+  }
+  amenityIds?: number[]
+}
+
 export class PropertyService {
   
-  // Public API methods
+  // === PUBLIC APIs ===
+  
+  // Get published properties
   static async getPublishedProperties(
-    propertyType?: string,
-    locale: Locale = 'vi',
+    propertyType?: PropertyType,
+    locale: Locale = 'en',
     page: number = 0,
     size: number = 20
   ): Promise<PageResponse<PropertySummary>> {
     const params = new URLSearchParams({
-      locale,
       page: page.toString(),
-      size: size.toString()
+      size: size.toString(),
+      locale
     })
-    
+
     if (propertyType) {
       params.append('propertyType', propertyType)
     }
@@ -35,7 +107,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  static async getPropertyBySlug(slug: string, locale: Locale = 'vi'): Promise<PropertyDetail> {
+  // Get property by slug
+  static async getPropertyBySlug(slug: string, locale: Locale = 'en'): Promise<PropertyDetail> {
     const response = await publicApi.get<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.PROPERTIES}/${slug}?locale=${locale}`
     )
@@ -43,30 +116,19 @@ export class PropertyService {
     return response.data.data
   }
 
+  // Search properties
   static async searchProperties(
     filters: PropertyFilters,
-    page: number = 0,
-    size: number = 20
+    locale: Locale = 'en'
   ): Promise<PageResponse<PropertySummary>> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-      locale: filters.locale || 'vi'
-    })
+    const params = new URLSearchParams({ locale })
 
     // Add filters to params
-    if (filters.query) params.append('query', filters.query)
-    if (filters.propertyType) params.append('propertyType', filters.propertyType)
-    if (filters.minPrice) params.append('minPrice', filters.minPrice.toString())
-    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString())
-    if (filters.minArea) params.append('minArea', filters.minArea.toString())
-    if (filters.maxArea) params.append('maxArea', filters.maxArea.toString())
-    if (filters.minBedrooms) params.append('minBedrooms', filters.minBedrooms.toString())
-    if (filters.maxBedrooms) params.append('maxBedrooms', filters.maxBedrooms.toString())
-    if (filters.isFeatured !== undefined) params.append('isFeatured', filters.isFeatured.toString())
-    if (filters.amenityIds) {
-      filters.amenityIds.forEach(id => params.append('amenityIds', id.toString()))
-    }
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString())
+      }
+    })
 
     const response = await publicApi.get<ApiResponse<PageResponse<PropertySummary>>>(
       `${API_ENDPOINTS.PROPERTIES}/search?${params}`
@@ -75,7 +137,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  static async getFeaturedProperties(locale: Locale = 'vi'): Promise<PropertySummary[]> {
+  // Get featured properties
+  static async getFeaturedProperties(locale: Locale = 'en'): Promise<PropertySummary[]> {
     const response = await publicApi.get<ApiResponse<PropertySummary[]>>(
       `${API_ENDPOINTS.PROPERTIES}/featured?locale=${locale}`
     )
@@ -83,21 +146,26 @@ export class PropertyService {
     return response.data.data
   }
 
-  // Admin API methods
+  // === ADMIN APIs ===
+  
+  // Get properties for admin (with filters)
   static async getPropertiesForAdmin(
-    filters?: PropertyFilters,
+    filters: PropertyFilters = {},
     page: number = 0,
-    size: number = 10
+    size: number = 20
   ): Promise<PageResponse<PropertySummary>> {
+    // Build query params for @ModelAttribute PropertySearchRequest
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString()
     })
 
-    if (filters) {
-      if (filters.propertyType) params.append('propertyType', filters.propertyType)
-      if (filters.query) params.append('query', filters.query)
-    }
+    // Add filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString())
+      }
+    })
 
     const response = await adminApi.get<ApiResponse<PageResponse<PropertySummary>>>(
       `${API_ENDPOINTS.ADMIN.PROPERTIES}?${params}`
@@ -106,6 +174,7 @@ export class PropertyService {
     return response.data.data
   }
 
+  // Get property for admin by ID
   static async getPropertyForAdmin(id: number): Promise<PropertyDetail> {
     const response = await adminApi.get<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`
@@ -114,7 +183,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  static async createProperty(propertyData: any): Promise<PropertyDetail> {
+  // Create property
+  static async createProperty(propertyData: PropertyCreateRequest): Promise<PropertyDetail> {
     const response = await adminApi.post<ApiResponse<PropertyDetail>>(
       API_ENDPOINTS.ADMIN.PROPERTIES,
       propertyData
@@ -123,7 +193,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  static async updateProperty(id: number, propertyData: any): Promise<PropertyDetail> {
+  // Update property
+  static async updateProperty(id: number, propertyData: PropertyUpdateRequest): Promise<PropertyDetail> {
     const response = await adminApi.put<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`,
       propertyData
@@ -132,17 +203,30 @@ export class PropertyService {
     return response.data.data
   }
 
+  // Delete property (soft delete)
   static async deleteProperty(id: number): Promise<void> {
     await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`)
   }
 
-  static async togglePropertyActive(id: number): Promise<void> {
-    await adminApi.patch(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}/toggle-active`)
+  // === IMAGE MANAGEMENT ===
+  
+  // Get property images
+  static async getPropertyImages(propertyId: number): Promise<any[]> {
+    const response = await adminApi.get<ApiResponse<any[]>>(
+      `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`
+    )
+    
+    return response.data.data
   }
 
-  static async uploadPropertyImages(propertyId: number, files: File[]): Promise<any> {
+  // Upload property image
+  static async uploadPropertyImage(propertyId: number, file: File, altText?: string): Promise<any> {
     const formData = new FormData()
-    files.forEach(file => formData.append('files', file))
+    formData.append('file', file)
+    
+    if (altText) {
+      formData.append('altText', altText)
+    }
 
     const response = await adminApi.post(
       `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`,
@@ -157,7 +241,19 @@ export class PropertyService {
     return response.data.data
   }
 
-  static async deletePropertyImage(imageId: number): Promise<void> {
-    await adminApi.delete(`/images/${imageId}`)
+  // Delete property image
+  static async deletePropertyImage(propertyId: number, imageId: number): Promise<void> {
+    await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images/${imageId}`)
+  }
+
+  // === UTILITY ===
+  
+  // Check slug availability
+  static async checkSlugAvailability(slug: string): Promise<boolean> {
+    const response = await publicApi.get<ApiResponse<boolean>>(
+      `${API_ENDPOINTS.PROPERTIES}/${slug}/available`
+    )
+    
+    return response.data.data
   }
 }
