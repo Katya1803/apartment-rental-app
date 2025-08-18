@@ -41,8 +41,7 @@ public class PropertyImage extends BaseEntity {
 
     // Helper methods
     public String getImageUrl() {
-        // Assuming images are served from a static path
-        return filePath != null ? filePath : "/images/placeholder.jpg";
+        return filePath != null ? "http://localhost:8080/uploads/" + filePath : "/images/placeholder.jpg";
     }
 
     public String getImageSizeFormatted() {
