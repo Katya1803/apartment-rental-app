@@ -1,4 +1,4 @@
-// src/services/propertyService.ts - Updated to match backend API
+// app-frontend/src/services/propertyService.ts - Thêm method getPropertyBySlug
 import { publicApi, adminApi } from '../config/axios'
 import { API_ENDPOINTS } from '../config/constants'
 import type { 
@@ -11,7 +11,6 @@ import type {
   Locale 
 } from '../types'
 
-// Interface for filters (matching backend PropertySearchRequest)
 export interface PropertyFilters {
   query?: string
   propertyType?: PropertyType
@@ -23,60 +22,6 @@ export interface PropertyFilters {
   minBedrooms?: number
   maxBedrooms?: number
   isFeatured?: boolean
-}
-
-// Interface for property create request (matching backend PropertyCreateRequest)
-export interface PropertyCreateRequest {
-  slug: string
-  code?: string
-  propertyType: PropertyType
-  priceMonth: number
-  areaSqm?: number
-  bedrooms?: number
-  bathrooms?: number
-  floorNo?: number
-  petPolicy?: string
-  viewDesc?: string
-  latitude?: number
-  longitude?: number
-  addressLine?: string
-  status: PropertyStatus
-  isFeatured: boolean
-  translations: {
-    [locale: string]: {
-      title: string
-      descriptionMd: string
-      addressText: string
-    }
-  }
-  amenityIds?: number[]
-}
-
-// Interface for property update request (matching backend PropertyUpdateRequest)
-export interface PropertyUpdateRequest {
-  slug?: string
-  code?: string
-  propertyType?: PropertyType
-  priceMonth?: number
-  areaSqm?: number
-  bedrooms?: number
-  bathrooms?: number
-  floorNo?: number
-  petPolicy?: string
-  viewDesc?: string
-  latitude?: number
-  longitude?: number
-  addressLine?: string
-  status?: PropertyStatus
-  isFeatured?: boolean
-  translations?: {
-    [locale: string]: {
-      title: string
-      descriptionMd: string
-      addressText: string
-    }
-  }
-  amenityIds?: number[]
 }
 
 export class PropertyService {
@@ -107,7 +52,7 @@ export class PropertyService {
     return response.data.data
   }
 
-  // Get property by slug
+  // Get property by slug - METHOD MỚI
   static async getPropertyBySlug(slug: string, locale: Locale = 'vi'): Promise<PropertyDetail> {
     const response = await publicApi.get<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.PROPERTIES}/${slug}?locale=${locale}`
@@ -127,19 +72,17 @@ export class PropertyService {
 
   // === ADMIN APIs ===
   
-  // Get properties for admin (with filters)
+  // Get properties for admin
   static async getPropertiesForAdmin(
     filters: PropertyFilters = {},
     page: number = 0,
     size: number = 20
   ): Promise<PageResponse<PropertySummary>> {
-    // Build query params for @ModelAttribute PropertySearchRequest
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString()
     })
 
-    // Add filters
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         params.append(key, value.toString())
@@ -163,7 +106,7 @@ export class PropertyService {
   }
 
   // Create property
-  static async createProperty(propertyData: PropertyCreateRequest): Promise<PropertyDetail> {
+  static async createProperty(propertyData: any): Promise<PropertyDetail> {
     const response = await adminApi.post<ApiResponse<PropertyDetail>>(
       API_ENDPOINTS.ADMIN.PROPERTIES,
       propertyData
@@ -173,7 +116,7 @@ export class PropertyService {
   }
 
   // Update property
-  static async updateProperty(id: number, propertyData: PropertyUpdateRequest): Promise<PropertyDetail> {
+  static async updateProperty(id: number, propertyData: any): Promise<PropertyDetail> {
     const response = await adminApi.put<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`,
       propertyData
@@ -182,57 +125,8 @@ export class PropertyService {
     return response.data.data
   }
 
-  // Delete property (soft delete)
+  // Delete property
   static async deleteProperty(id: number): Promise<void> {
     await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`)
-  }
-
-  // === IMAGE MANAGEMENT ===
-  
-  // Get property images
-  static async getPropertyImages(propertyId: number): Promise<any[]> {
-    const response = await adminApi.get<ApiResponse<any[]>>(
-      `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`
-    )
-    
-    return response.data.data
-  }
-
-  // Upload property image
-  static async uploadPropertyImage(propertyId: number, file: File, altText?: string): Promise<any> {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    if (altText) {
-      formData.append('altText', altText)
-    }
-
-    const response = await adminApi.post(
-      `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    )
-    
-    return response.data.data
-  }
-
-  // Delete property image
-  static async deletePropertyImage(propertyId: number, imageId: number): Promise<void> {
-    await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images/${imageId}`)
-  }
-
-  // === UTILITY ===
-  
-  // Check slug availability
-  static async checkSlugAvailability(slug: string): Promise<boolean> {
-    const response = await publicApi.get<ApiResponse<boolean>>(
-      `${API_ENDPOINTS.PROPERTIES}/${slug}/available`
-    )
-    
-    return response.data.data
   }
 }

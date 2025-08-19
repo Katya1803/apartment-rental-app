@@ -23,7 +23,7 @@ export class CompanyService {
       )
       
       // Map API response to CompanyInfo interface
-      const data = response.data.data || {}
+      const data = response.data.data
       return {
         companyName: data.companyName || 'Q Apartment',
         companyEmail: data.companyEmail || 'q.apartment09hbm@gmail.com',
@@ -34,9 +34,9 @@ export class CompanyService {
         ...data
       }
     } catch (error) {
-      console.warn('Backend not available, using fallback company info:', error.message)
+      console.error('Failed to fetch company info:', error)
       
-      // Return fallback data when backend is down
+      // Return fallback data
       return {
         companyName: 'Q Apartment',
         companyEmail: 'q.apartment09hbm@gmail.com',
