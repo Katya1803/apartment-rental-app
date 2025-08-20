@@ -1,4 +1,8 @@
+// Locale, Role, Status
 export type Locale = 'vi' | 'en' | 'ja'
+export type PropertyStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN'
+export type PropertyType = 'APARTMENT' | 'ROOM' | 'STUDIO' | 'HOUSE'
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR'
 
 // API Response wrapper (matching backend ApiResponse)
 export interface ApiResponse<T> {
@@ -27,10 +31,9 @@ export interface PageResponse<T> {
   numberOfElements: number
 }
 
-// Property types (matching backend PropertyDetailResponse & PropertySummaryResponse)
-export type PropertyType = 'APARTMENT' | 'ROOM' | 'STUDIO' | 'HOUSE'
-export type PropertyStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN'
-
+// -------------------------------------------
+// Property types
+// -------------------------------------------
 export interface PropertyTranslation {
   title: string
   descriptionMd: string
@@ -111,9 +114,9 @@ export interface Amenity {
   isCommonAmenity: boolean
 }
 
-// User types (matching backend UserSummaryResponse)
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR'
-
+// -------------------------------------------
+// User types
+// -------------------------------------------
 export interface UserSummary {
   id: number
   email: string
@@ -124,7 +127,9 @@ export interface UserSummary {
   lastLoginAt?: string
 }
 
-// Auth types (matching backend LoginResponse)
+// -------------------------------------------
+// Auth
+// -------------------------------------------
 export interface LoginRequest {
   email: string
   password: string
@@ -138,7 +143,9 @@ export interface LoginResponse {
   user: UserSummary
 }
 
-// Contact types (matching backend ContactMessageResponse)
+// -------------------------------------------
+// Contact
+// -------------------------------------------
 export interface ContactMessage {
   id: number
   fullName: string
@@ -165,7 +172,9 @@ export interface ContactRequest {
   preferredLang?: Locale
 }
 
-// Site settings & content
+// -------------------------------------------
+// Site settings
+// -------------------------------------------
 export interface SiteSetting {
   id: number
   key: string
@@ -174,6 +183,11 @@ export interface SiteSetting {
   updatedAt: string
 }
 
+// -------------------------------------------
+// Content Pages
+// -------------------------------------------
+
+// Entity used in frontend
 export interface ContentPage {
   id: number
   slug: string
@@ -188,7 +202,46 @@ export interface ContentPage {
   }>
 }
 
+// API responses (from file 1)
+export interface ContentPageResponse {
+  id: number
+  slug: string
+  status: PropertyStatus
+  title: string // Current locale title
+  bodyPreview: string // First 200 chars
+  translations: Record<string, ContentPageTranslationResponse>
+  createdBy: UserSummary
+  updatedBy: UserSummary
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ContentPageTranslationResponse {
+  title: string
+  bodyMd: string
+}
+
+// Requests
+export interface ContentPageCreateRequest {
+  slug: string
+  status: PropertyStatus
+  translations: Record<string, ContentPageTranslationRequest>
+}
+
+export interface ContentPageUpdateRequest {
+  slug?: string
+  status?: PropertyStatus
+  translations?: Record<string, ContentPageTranslationRequest>
+}
+
+export interface ContentPageTranslationRequest {
+  title: string
+  bodyMd: string
+}
+
+// -------------------------------------------
 // Search & Filter types
+// -------------------------------------------
 export interface PropertyFilters {
   propertyType?: PropertyType
   minPrice?: number
@@ -203,14 +256,15 @@ export interface PropertyFilters {
   locale?: Locale
 }
 
-// Error types
+// -------------------------------------------
+// Error & File upload
+// -------------------------------------------
 export interface ApiError {
   code: string
   message: string
   details?: Record<string, any>
 }
 
-// File upload
 export interface FileUploadResponse {
   fileName: string
   originalName: string
@@ -218,7 +272,9 @@ export interface FileUploadResponse {
   size: number
 }
 
-// Favourite service (localStorage)
+// -------------------------------------------
+// Favourite
+// -------------------------------------------
 export interface FavouriteItem {
   propertyId: number
   addedAt: string

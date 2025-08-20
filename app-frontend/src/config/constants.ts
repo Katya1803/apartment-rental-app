@@ -1,4 +1,3 @@
-// app-frontend/src/config/constants.ts - UPDATED ROUTES
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 export const ADMIN_API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || 'http://localhost:8080/api/admin'
 
@@ -27,7 +26,7 @@ export const API_ENDPOINTS = {
   AMENITIES: '/amenities',
   DISTRICTS: '/districts', 
   CONTACT: '/contact',
-  CONTENT: '/content',
+  CONTENT: '/content', // NEW
   COMPANY_INFO: '/company-info',
   
   // Auth endpoints  
@@ -45,7 +44,7 @@ export const API_ENDPOINTS = {
     MESSAGES: '/messages', 
     ANALYTICS: '/analytics',
     SITE_SETTINGS: '/site-settings',
-    CONTENT: '/content'
+    CONTENT: '/content' // NEW
   }
 } as const
 
@@ -66,20 +65,17 @@ export const STORAGE_KEYS = {
   FAVOURITES: 'favourites'
 } as const
 
-// Routes - UPDATED WITH NEW NAVIGATION STRUCTURE
+// Routes - UPDATED WITH CONTENT ROUTES
 export const ROUTES = {
   // Public routes
   HOME: '/',
   PROPERTIES: '/properties',
   PROPERTY_DETAIL: '/properties/:slug',
-  ROOMS: '/rooms',
   FAVOURITES: '/favourites',
   SEARCH: '/search',
   CONTACT: '/contact',
-  GUIDE: '/guide',
-  INFO: '/info',
-  ABOUT_US: '/about-us',
-  CONTENT: '/content/:slug',
+  GUIDES: '/guides', // NEW: Guide list page
+  CONTENT: '/content/:slug', // NEW: Individual content page
   
   // Admin routes
   ADMIN: {
@@ -89,7 +85,7 @@ export const ROUTES = {
     PROPERTY_CREATE: '/admin/properties/create',
     PROPERTY_EDIT: '/admin/properties/:id/edit',
     MESSAGES: '/admin/messages',
-    CONTENT: '/admin/content',
+    CONTENT: '/admin/content', // NEW
     USERS: '/admin/users',
     SETTINGS: '/admin/settings'
   }

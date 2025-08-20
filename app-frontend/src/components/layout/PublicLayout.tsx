@@ -1,4 +1,3 @@
-// app-frontend/src/components/layout/PublicLayout.tsx - UPDATED NAVIGATION
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -13,13 +12,16 @@ import {
   Menu,
   MenuItem,
   Badge,
-  Stack
+  Stack,
+  Divider
 } from '@mui/material'
 import {
   Language as LanguageIcon,
-  Favorite as FavoriteIcon
+  Favorite as FavoriteIcon,
+  KeyboardArrowDown as ArrowDownIcon
 } from '@mui/icons-material'
 import { APP_NAME, ROUTES, STORAGE_KEYS } from '../../config/constants'
+import { useContentPages } from '../../hooks/useContentPages'
 import type { Locale } from '../../types'
 
 interface PublicLayoutProps {
@@ -32,7 +34,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const { t, i18n } = useTranslation()
   
   const [languageMenu, setLanguageMenu] = useState<null | HTMLElement>(null)
+  const [guideMenu, setGuideMenu] = useState<null | HTMLElement>(null)
   const [favoriteCount, setFavoriteCount] = useState(0)
+
+  // Fetch content pages for guide dropdown
+  const { data: contentPages, isLoading: contentLoading } = useContentPages(i18n.language as Locale)
 
   useEffect(() => {
     // Update favorite count from localStorage
@@ -55,6 +61,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
 
   const handleNavigation = (path: string) => {
     navigate(path)
+  }
+
+  const handleGuideItemClick = (slug: string) => {
+    navigate(`/content/${slug}`)
+    setGuideMenu(null)
   }
 
   // Language options
@@ -97,19 +108,72 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               </Button>
               
               <Button
-                color={isActivePage(ROUTES.GUIDE) ? 'primary' : 'inherit'}
-                onClick={() => handleNavigation(ROUTES.GUIDE)}
+                color={isActivePage('/properties') ? 'primary' : 'inherit'}
+                onClick={() => handleNavigation('/properties')}
                 sx={{ textTransform: 'none', fontSize: '1rem' }}
               >
-                {t('guide')}
+                {t('properties')}
               </Button>
               
+              {/* Guide Dropdown */}
               <Button
-                color={isActivePage(ROUTES.INFO) ? 'primary' : 'inherit'}
-                onClick={() => handleNavigation(ROUTES.INFO)}
+                color={isActivePage('/content') ? 'primary' : 'inherit'}
+                onClick={(e) => setGuideMenu(e.currentTarget)}
+                endIcon={<ArrowDownIcon />}
                 sx={{ textTransform: 'none', fontSize: '1rem' }}
               >
-                {t('info')}
+                {t('guides')}
+              </Button>
+
+              <Menu
+                anchorEl={guideMenu}
+                open={Boolean(guideMenu)}
+                onClose={() => setGuideMenu(null)}
+                PaperProps={{
+                  sx: { mt: 1, minWidth: 200 }
+                }}
+              >
+                {contentLoading ? (
+                  <MenuItem disabled>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('loading')}...
+                    </Typography>
+                  </MenuItem>
+                ) : contentPages?.length === 0 ? (
+                  <MenuItem disabled>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('no_guides_available')}
+                    </Typography>
+                  </MenuItem>
+                ) : (
+                  contentPages?.map((page) => (
+                    <MenuItem
+                      key={page.id}
+                      onClick={() => handleGuideItemClick(page.slug)}
+                    >
+                      <Typography variant="body2">
+                        {page.title}
+                      </Typography>
+                    </MenuItem>
+                  ))
+                )}
+                <Divider />
+                <MenuItem onClick={() => {
+                  navigate('/guides')
+                  setGuideMenu(null)
+                }}>
+                  <Typography variant="body2" color="primary">
+                    {t('view_all_guides')}
+                  </Typography>
+                </MenuItem>
+              </Menu>
+
+              <Button
+                color={isActivePage(ROUTES.CONTACT) ? 'primary' : 'inherit'}
+                onClick={() => handleNavigation(ROUTES.CONTACT)}
+                sx={{ textTransform: 'none', fontSize: '1rem' }}
+              >
+                {t('contact')}
               </Button>
             </Box>
 
@@ -160,7 +224,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       {/* Mobile Navigation */}
       <Box sx={{ display: { xs: 'block', md: 'none' }, bgcolor: 'grey.50', py: 1 }}>
         <Container maxWidth="lg">
-          <Stack direction="row" spacing={1} justifyContent="center">
+          <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
             <Button
               size="small"
               color={isActivePage(ROUTES.HOME) ? 'primary' : 'inherit'}
@@ -171,18 +235,26 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             
             <Button
               size="small"
-              color={isActivePage(ROUTES.GUIDE) ? 'primary' : 'inherit'}
-              onClick={() => handleNavigation(ROUTES.GUIDE)}
+              color={isActivePage('/properties') ? 'primary' : 'inherit'}
+              onClick={() => handleNavigation('/properties')}
             >
-              {t('guide')}
+              {t('properties')}
             </Button>
             
             <Button
               size="small"
-              color={isActivePage(ROUTES.INFO) ? 'primary' : 'inherit'}
-              onClick={() => handleNavigation(ROUTES.INFO)}
+              color={isActivePage('/content') ? 'primary' : 'inherit'}
+              onClick={() => navigate('/guides')}
             >
-              {t('info')}
+              {t('guides')}
+            </Button>
+            
+            <Button
+              size="small"
+              color={isActivePage(ROUTES.CONTACT) ? 'primary' : 'inherit'}
+              onClick={() => handleNavigation(ROUTES.CONTACT)}
+            >
+              {t('contact')}
             </Button>
           </Stack>
         </Container>
@@ -193,8 +265,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         {children}
       </Box>
 
-      {/* Footer */}
-      <Box component="footer" sx={{ bgcolor: 'grey.100', py: 3, mt: 'auto' }}>
+      {/* Footer placeholder */}
+      <Box component="footer" sx={{ mt: 'auto', py: 3, bgcolor: 'grey.100' }}>
         <Container maxWidth="lg">
           <Typography variant="body2" color="text.secondary" align="center">
             © 2024 {APP_NAME}. All rights reserved.

@@ -1,4 +1,3 @@
-// src/pages/public/HomePage.tsx - VIẾT LẠI CLEAN
 import React, { useState, useEffect } from 'react'
 import {
   Box,
