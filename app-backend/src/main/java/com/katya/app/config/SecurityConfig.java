@@ -2,6 +2,7 @@ package com.katya.app.config;
 
 import com.katya.app.security.CustomUserDetailsService;
 import com.katya.app.security.JwtAuthenticationFilter;
+import com.katya.app.util.constant.ApiEndpoints;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,11 +29,13 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    // ===== Password Encoder =====
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
+    // ===== Authentication Provider =====
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -41,37 +44,46 @@ public class SecurityConfig {
         return provider;
     }
 
+    // ===== Authentication Manager =====
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // ===== Security Filter Chain =====
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // Nếu có CORS: .cors(Customizer.withDefaults())
+                .cors(cors -> {}) // dùng CorsConfig riêng
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ==== Swagger / OpenAPI (springdoc) ====
+
+                        // ==== Swagger / OpenAPI ====
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
 
+                        // ==== Auth endpoints ====
+                        .requestMatchers(ApiEndpoints.AUTH + "/**").permitAll()
+
                         // ==== Public endpoints ====
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/properties/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/amenities/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiEndpoints.PROPERTIES + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiEndpoints.AMENITIES + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiEndpoints.DISTRICTS + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiEndpoints.CONTENT + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiEndpoints.COMPANY_INFO + "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, ApiEndpoints.CONTACT).permitAll()
                         .requestMatchers("/uploads/**").permitAll()
 
-                        // Cho preflight CORS
+                        // ==== CORS preflight ====
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ==== Admin ====
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "EDITOR")
+                        // ==== Admin endpoints ====
+                        .requestMatchers(ApiEndpoints.ADMIN_BASE + "/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN", "EDITOR")
 
                         // ==== Others ====
                         .anyRequest().authenticated()
