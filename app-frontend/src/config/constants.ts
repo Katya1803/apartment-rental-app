@@ -1,3 +1,4 @@
+// app-frontend/src/config/constants.ts - UPDATED ROUTES
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 export const ADMIN_API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || 'http://localhost:8080/api/admin'
 
@@ -65,7 +66,7 @@ export const STORAGE_KEYS = {
   FAVOURITES: 'favourites'
 } as const
 
-// Routes
+// Routes - UPDATED WITH NEW NAVIGATION STRUCTURE
 export const ROUTES = {
   // Public routes
   HOME: '/',
@@ -76,6 +77,8 @@ export const ROUTES = {
   SEARCH: '/search',
   CONTACT: '/contact',
   GUIDE: '/guide',
+  INFO: '/info',
+  ABOUT_US: '/about-us',
   CONTENT: '/content/:slug',
   
   // Admin routes
