@@ -14,7 +14,8 @@ import {
   MenuItem,
   Badge,
   Stack,
-  Divider
+  Divider,
+  Grid
 } from '@mui/material'
 import {
   Language as LanguageIcon,
@@ -23,6 +24,7 @@ import {
 } from '@mui/icons-material'
 import { APP_NAME, ROUTES, STORAGE_KEYS } from '../../config/constants'
 import { useContentPages } from '../../hooks/useContentPages'
+import { FavoritesService } from '../../services/favoritesService' // ⚠️ THÊM import
 import { FloatingContactIcons } from '../common/FloatingContactIcons'
 import type { Locale } from '../../types'
 
@@ -43,10 +45,22 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const { data: contentPages, isLoading: contentLoading } = useContentPages(i18n.language as Locale)
 
   useEffect(() => {
-    // Update favorite count from localStorage
-    const favorites = JSON.parse(localStorage.getItem(STORAGE_KEYS.FAVOURITES) || '[]')
-    setFavoriteCount(favorites.length)
-  }, [location.pathname])
+    // ⚠️ SỬA: Load favorites and listen to storage changes
+    const updateFavoriteCount = () => {
+      setFavoriteCount(FavoritesService.getFavoritesCount())
+    }
+
+    // Initial load
+    updateFavoriteCount()
+    
+    // Listen to storage changes
+    const handleStorageChange = () => {
+      updateFavoriteCount()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, []) // ⚠️ SỬA: Bỏ dependency location.pathname
 
   const isActivePage = (path: string): boolean => {
     if (path === ROUTES.HOME) {
@@ -81,16 +95,16 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Top Bar */}
-      <AppBar position="static" sx={{ bgcolor: 'white', color: 'text.primary', boxShadow: 1 }}>
+      {/* Header */}
+      <AppBar position="sticky" sx={{ backgroundColor: '#fff', color: 'text.primary', boxShadow: 1 }}>
         <Container maxWidth="lg">
-          <Toolbar sx={{ justifyContent: 'space-between', py: 1 }}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Left: Logo */}
             <Typography
-              variant="h5"
+              variant="h6"
               component="div"
-              sx={{
-                fontWeight: 'bold',
+              sx={{ 
+                fontWeight: 'bold', 
                 color: 'primary.main',
                 cursor: 'pointer'
               }}
@@ -99,8 +113,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               {APP_NAME}
             </Typography>
 
-            {/* Center: Navigation Tabs */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+            {/* Center: Navigation (Desktop) */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
               <Button
                 color={isActivePage(ROUTES.HOME) ? 'primary' : 'inherit'}
                 onClick={() => handleNavigation(ROUTES.HOME)}
@@ -117,11 +131,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 {t('properties')}
               </Button>
               
-              {/* Guide Dropdown */}
               <Button
-                color={isActivePage('/content') ? 'primary' : 'inherit'}
-                onClick={(e) => setGuideMenu(e.currentTarget)}
                 endIcon={<ArrowDownIcon />}
+                onClick={(e) => setGuideMenu(e.currentTarget)}
                 sx={{ textTransform: 'none', fontSize: '1rem' }}
               >
                 {t('guide')}
@@ -131,31 +143,24 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 anchorEl={guideMenu}
                 open={Boolean(guideMenu)}
                 onClose={() => setGuideMenu(null)}
-                PaperProps={{
-                  sx: { mt: 1, minWidth: 200 }
-                }}
               >
-                {contentLoading ? (
-                  <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('loading')}...
-                    </Typography>
-                  </MenuItem>
-                ) : contentPages?.length === 0 ? (
-                  <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      Chưa có hướng dẫn nào
-                    </Typography>
-                  </MenuItem>
-                ) : (
-                  contentPages?.map((page) => (
-                    <MenuItem
-                      key={page.id}
-                      onClick={() => handleGuideItemClick(page.slug)}
-                    >
-                      {page.translations[i18n.language]?.title || page.slug}
-                    </MenuItem>
-                  ))
+                <MenuItem onClick={() => navigate('/guides')}>
+                  <Typography>{t('allGuides')}</Typography>
+                </MenuItem>
+                {!contentLoading && contentPages && (
+                  <>
+                    <Divider />
+                    {contentPages.slice(0, 5).map((page) => (
+                      <MenuItem
+                        key={page.slug}
+                        onClick={() => handleGuideItemClick(page.slug)}
+                      >
+                        <Typography variant="body2">
+                          {page.translations[i18n.language as Locale]?.title || page.slug}
+                        </Typography>
+                      </MenuItem>
+                    ))}
+                  </>
                 )}
               </Menu>
               
@@ -247,6 +252,14 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             >
               {t('contact')}
             </Button>
+
+            {/* Mobile Language Switcher */}
+            <Button
+              size="small"
+              onClick={(e) => setLanguageMenu(e.currentTarget)}
+            >
+              {currentLanguage.flag}
+            </Button>
           </Stack>
         </Container>
       </Box>
@@ -256,14 +269,72 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         {children}
       </Box>
 
-      {/* Floating Contact Icons - NEW FEATURE */}
+      {/* Floating Contact Icons */}
       <FloatingContactIcons />
 
-      {/* Footer placeholder */}
-      <Box component="footer" sx={{ mt: 'auto', py: 3, bgcolor: 'grey.100' }}>
+      {/* Footer */}
+      <Box component="footer" sx={{ bgcolor: 'grey.900', color: 'white', py: 4, mt: 'auto' }}>
         <Container maxWidth="lg">
-          <Typography variant="body2" color="text.secondary" align="center">
-            © 2024 {APP_NAME}. All rights reserved.
+          <Grid container spacing={4}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="h6" gutterBottom>
+                {APP_NAME}
+              </Typography>
+              <Typography variant="body2" color="grey.400">
+                {t('footerDescription')}
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="h6" gutterBottom>
+                {t('quickLinks')}
+              </Typography>
+              <Stack spacing={1}>
+                <Button color="inherit" onClick={() => handleNavigation(ROUTES.HOME)} sx={{ justifyContent: 'flex-start' }}>
+                  {t('home')}
+                </Button>
+                <Button color="inherit" onClick={() => handleNavigation('/properties')} sx={{ justifyContent: 'flex-start' }}>
+                  {t('properties')}
+                </Button>
+                <Button color="inherit" onClick={() => handleNavigation(ROUTES.CONTACT)} sx={{ justifyContent: 'flex-start' }}>
+                  {t('contact')}
+                </Button>
+              </Stack>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="h6" gutterBottom>
+                {t('contact')}
+              </Typography>
+              <Stack spacing={1}>
+                <Typography variant="body2" color="grey.400">
+                  📧 q.apartment09hbm@gmail.com
+                </Typography>
+                <Typography variant="body2" color="grey.400">
+                  📱 0903228571
+                </Typography>
+                <Typography variant="body2" color="grey.400">
+                  💬 Zalo: 0903228571
+                </Typography>
+              </Stack>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="h6" gutterBottom>
+                {t('followUs')}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Typography variant="body2" color="grey.400">
+                  🌐 {t('comingSoon')}
+                </Typography>
+              </Stack>
+            </Grid>
+          </Grid>
+          
+          <Divider sx={{ my: 3, borderColor: 'grey.700' }} />
+          
+          <Typography variant="body2" color="grey.400" align="center">
+            © 2024 {APP_NAME}. {t('allRightsReserved')}
           </Typography>
         </Container>
       </Box>

@@ -1,4 +1,4 @@
-// app-frontend/src/pages/admin/AdminSettings.tsx
+// app-frontend/src/pages/admin/AdminSettings.tsx - FINAL FIXED
 import React, { useState, useEffect } from 'react'
 import {
   Box,
@@ -23,8 +23,7 @@ import {
 } from '@mui/icons-material'
 import { siteSettingsService } from '../../services/siteSettingsService'
 import type { SiteSettingUpdateRequest } from '../../services/siteSettingsService'
-import type { SiteSetting } from '../../types'
-import type { Locale } from '../../types'
+import type { SiteSettingResponse, Locale } from '../../types'
 import { useAuthStore } from '../../stores/authStore'
 
 interface TabPanelProps {
@@ -42,7 +41,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 const AdminSettings: React.FC = () => {
   const { user } = useAuthStore()
   const [tabValue, setTabValue] = useState(0)
-  const [settings, setSettings] = useState<SiteSetting[]>([])
+  const [settings, setSettings] = useState<SiteSettingResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -63,7 +62,7 @@ const AdminSettings: React.FC = () => {
     'company_phone',
     'company_address',
     'company_description',
-    'zalo_number'
+    'company_zalo'
   ]
 
   useEffect(() => {
@@ -74,15 +73,25 @@ const AdminSettings: React.FC = () => {
     try {
       setLoading(true)
       const data = await siteSettingsService.getAllSettings()
+      
+      console.log('Settings response:', data) // Debug log
       setSettings(data)
       
-      // Initialize form data
+      // FIXED: Map backend response correctly to form state
       const formState: Record<string, Record<Locale, string>> = {}
       data.forEach(setting => {
-        formState[setting.key] = setting.value
+        formState[setting.key] = {
+          vi: setting.translations.vi || setting.value || '',
+          en: setting.translations.en || setting.value || '',
+          ja: setting.translations.ja || setting.value || ''
+        }
+        console.log(`Mapped ${setting.key}:`, formState[setting.key]) // Debug log
       })
+      
+      console.log('Final form state:', formState) // Debug log
       setFormData(formState)
     } catch (error) {
+      console.error('Failed to load settings:', error)
       setMessage({ type: 'error', text: 'Failed to load settings' })
     } finally {
       setLoading(false)
@@ -106,16 +115,15 @@ const AdminSettings: React.FC = () => {
         translations: formData[key] || {}
       }
       
+      console.log(`Saving ${key}:`, updateData) // Debug log
+      
       await siteSettingsService.updateSetting(key, updateData)
       setMessage({ type: 'success', text: `${key} updated successfully` })
       
-      // Update local state
-      setSettings(prev => prev.map(setting => 
-        setting.key === key 
-          ? { ...setting, value: formData[key] }
-          : setting
-      ))
+      // Refresh data after save
+      await loadSettings()
     } catch (error) {
+      console.error(`Failed to update ${key}:`, error)
       setMessage({ type: 'error', text: `Failed to update ${key}` })
     } finally {
       setSaving(null)
@@ -137,7 +145,7 @@ const AdminSettings: React.FC = () => {
     }
   }
 
-  const renderSettingCard = (setting: SiteSetting) => (
+  const renderSettingCard = (setting: SiteSettingResponse) => (
     <Card key={setting.key} sx={{ mb: 2 }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -151,12 +159,6 @@ const AdminSettings: React.FC = () => {
             color="primary"
           />
         </Box>
-        
-        {setting.description && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {setting.description}
-          </Typography>
-        )}
 
         <Grid container spacing={2}>
           {locales.map(locale => (
@@ -190,64 +192,75 @@ const AdminSettings: React.FC = () => {
     </Card>
   )
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SettingsIcon />
-          Site Settings
-        </Typography>
-        
-        {user?.role === 'SUPER_ADMIN' && (
-          <Button
-            variant="outlined"
-            startIcon={saving === 'initialize' ? <CircularProgress size={16} /> : <RefreshIcon />}
-            onClick={handleInitializeDefaults}
-            disabled={saving === 'initialize'}
-          >
-            Initialize Defaults
-          </Button>
-        )}
-      </Box>
+      {/* Header */}
+      <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <SettingsIcon />
+        Site Settings
+      </Typography>
 
+      {/* Success/Error Messages */}
       {message && (
         <Alert 
           severity={message.type} 
-          sx={{ mb: 3 }}
           onClose={() => setMessage(null)}
+          sx={{ mb: 2 }}
         >
           {message.text}
         </Alert>
       )}
 
+      {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
-        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
           <Tab label="Company Information" />
           <Tab label="All Settings" />
         </Tabs>
-        
-        <TabPanel value={tabValue} index={0}>
-          <Box sx={{ p: 3 }}>
+      </Paper>
+
+      {/* Tab Content */}
+      <TabPanel value={tabValue} index={0}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
             {settings
               .filter(setting => commonSettings.includes(setting.key))
               .map(renderSettingCard)}
+          </Grid>
+        )}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
           </Box>
-        </TabPanel>
-        
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ p: 3 }}>
-            {settings.map(renderSettingCard)}
-          </Box>
-        </TabPanel>
-      </Paper>
+        ) : (
+          <>
+            {/* Initialize button for SUPER_ADMIN */}
+            {user?.role === 'SUPER_ADMIN' && (
+              <Box sx={{ mb: 3 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={saving === 'initialize' ? <CircularProgress size={16} /> : <RefreshIcon />}
+                  onClick={handleInitializeDefaults}
+                  disabled={saving === 'initialize'}
+                >
+                  {saving === 'initialize' ? 'Initializing...' : 'Initialize Default Settings'}
+                </Button>
+              </Box>
+            )}
+
+            <Grid container spacing={2}>
+              {settings.map(renderSettingCard)}
+            </Grid>
+          </>
+        )}
+      </TabPanel>
     </Box>
   )
 }

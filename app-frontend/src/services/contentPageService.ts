@@ -8,7 +8,7 @@ export interface ContentPageCreateRequest {
   status: PropertyStatus
   translations: Record<string, {
     title: string
-    content: string
+    bodyMd: string  // ← Fixed: đổi từ 'content' thành 'bodyMd'
     metaDescription?: string
   }>
 }
@@ -18,7 +18,7 @@ export interface ContentPageUpdateRequest {
   status?: PropertyStatus
   translations?: Record<string, {
     title: string
-    content: string
+    bodyMd: string  // ← Fixed: đổi từ 'content' thành 'bodyMd'
     metaDescription?: string
   }>
 }

@@ -139,17 +139,17 @@ const AdminContent: React.FC = () => {
         translations: {
           vi: {
             title: pageData.translations.vi?.title || '',
-            content: pageData.translations.vi?.content || '',
+            content: pageData.translations.vi?.bodyMd || '', // ⚠️ SỬA: content -> bodyMd
             metaDescription: pageData.translations.vi?.metaDescription || ''
           },
           en: {
             title: pageData.translations.en?.title || '',
-            content: pageData.translations.en?.content || '',
+            content: pageData.translations.en?.bodyMd || '', // ⚠️ SỬA: content -> bodyMd
             metaDescription: pageData.translations.en?.metaDescription || ''
           },
           ja: {
             title: pageData.translations.ja?.title || '',
-            content: pageData.translations.ja?.content || '',
+            content: pageData.translations.ja?.bodyMd || '', // ⚠️ SỬA: content -> bodyMd
             metaDescription: pageData.translations.ja?.metaDescription || ''
           }
         }
@@ -196,6 +196,18 @@ const AdminContent: React.FC = () => {
     }
   }
 
+  // ⚠️ THÊM: Helper function để map từ 'content' thành 'bodyMd'
+  const mapTranslationsForAPI = (translations: any) => {
+    const result: any = {}
+    Object.entries(translations).forEach(([locale, data]: [string, any]) => {
+      result[locale] = {
+        title: data.title,
+        bodyMd: data.content, // ⚠️ MAP: content -> bodyMd
+      }
+    })
+    return result
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true)
@@ -205,7 +217,7 @@ const AdminContent: React.FC = () => {
         const updateData: ContentPageUpdateRequest = {
           slug: formData.slug,
           status: formData.status,
-          translations: formData.translations
+          translations: mapTranslationsForAPI(formData.translations) // ⚠️ SỬ DỤNG mapper
         }
         await contentPageService.updatePage(editingPage.id, updateData)
         setMessage({ type: 'success', text: 'Page updated successfully' })
@@ -214,7 +226,7 @@ const AdminContent: React.FC = () => {
         const createData: ContentPageCreateRequest = {
           slug: formData.slug,
           status: formData.status,
-          translations: formData.translations
+          translations: mapTranslationsForAPI(formData.translations) // ⚠️ SỬ DỤNG mapper
         }
         await contentPageService.createPage(createData)
         setMessage({ type: 'success', text: 'Page created successfully' })
@@ -233,7 +245,8 @@ const AdminContent: React.FC = () => {
   }
 
   const handleDelete = async (pageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this page?')) return
+    if (!window.confirm('Are you sure you want to delete this page?'))
+      return
     
     try {
       await contentPageService.deletePage(pageId)
@@ -320,54 +333,67 @@ const AdminContent: React.FC = () => {
             ) : pages.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">
-                  No content pages found
+                  <Typography variant="body2" color="text.secondary">
+                    No content pages found
+                  </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              pages.map((page) => (
-                <TableRow key={page.id}>
+              pages.map((contentPage) => (
+                <TableRow key={contentPage.id} hover>
                   <TableCell>
-                    {page.translations?.vi?.title || 'Untitled'}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                      {page.slug}
+                    <Typography variant="body2" fontWeight="medium">
+                      {contentPage.translations.vi?.title || contentPage.slug}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={statusLabels[page.status]} 
-                      color={statusColors[page.status]}
+                    <Typography variant="body2" color="text.secondary">
+                      {contentPage.slug}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={statusLabels[contentPage.status]}
+                      color={statusColors[contentPage.status]}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    {page.publishedAt ? new Date(page.publishedAt).toLocaleDateString() : '-'}
+                    <Typography variant="body2" color="text.secondary">
+                      {contentPage.publishedAt ? new Date(contentPage.publishedAt).toLocaleDateString() : '-'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    {new Date(page.updatedAt).toLocaleDateString()}
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(contentPage.updatedAt).toLocaleDateString()}
+                    </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small">
-                      <ViewIcon />
-                    </IconButton>
-                    {canEdit && (
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenDialog(page)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    )}
-                    {canDelete && (
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(page.id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    )}
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      {contentPage.status === 'PUBLISHED' && (
+                        <IconButton size="small" color="info">
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {canEdit && (
+                        <IconButton 
+                          size="small" 
+                          color="primary"
+                          onClick={() => handleOpenDialog(contentPage)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {canDelete && (
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => handleDelete(contentPage.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
@@ -376,32 +402,34 @@ const AdminContent: React.FC = () => {
         </Table>
         
         <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={totalElements}
+          rowsPerPage={size}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={size}
           onRowsPerPageChange={(e) => {
-            setSize(parseInt(e.target.value))
+            setSize(parseInt(e.target.value, 10))
             setPage(0)
           }}
-          rowsPerPageOptions={[5, 10, 20, 50]}
         />
       </TableContainer>
 
-      {/* Create/Edit Dialog */}
+      {/* Dialog */}
       <Dialog 
         open={dialogOpen} 
-        onClose={handleCloseDialog}
-        maxWidth="md"
+        onClose={handleCloseDialog} 
+        maxWidth="md" 
         fullWidth
+        PaperProps={{ sx: { minHeight: '70vh' } }}
       >
         <DialogTitle>
-          {editingPage ? 'Edit Page' : 'Create Page'}
+          {editingPage ? 'Edit Content Page' : 'Create Content Page'}
         </DialogTitle>
         
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
+        <DialogContent dividers>
+          {/* Basic Information */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -412,7 +440,6 @@ const AdminContent: React.FC = () => {
                 required
               />
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
@@ -429,14 +456,16 @@ const AdminContent: React.FC = () => {
             </Grid>
           </Grid>
 
-          {/* Language Tabs */}
-          <Box sx={{ mt: 3 }}>
+          {/* Translations Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-              {locales.map((locale, index) => (
+              {locales.map((locale, _index) => (
                 <Tab key={locale} label={localeLabels[locale]} />
               ))}
             </Tabs>
-            
+          </Box>
+
+          <Box>
             {locales.map((locale, index) => (
               <TabPanel key={locale} value={tabValue} index={index}>
                 <Grid container spacing={2}>

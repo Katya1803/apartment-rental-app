@@ -1,3 +1,5 @@
+// app-frontend/src/types/index.ts
+
 // Locale, Role, Status
 export type Locale = 'vi' | 'en' | 'ja'
 export type PropertyStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN'
@@ -187,7 +189,7 @@ export interface SiteSetting {
 // Content Pages
 // -------------------------------------------
 
-// Entity used in frontend
+// ⚠️ SỬA: Entity used in frontend - đổi 'content' thành 'bodyMd'
 export interface ContentPage {
   id: number
   slug: string
@@ -197,12 +199,12 @@ export interface ContentPage {
   updatedAt: string
   translations: Record<string, {
     title: string
-    content: string
+    bodyMd: string // ⚠️ ĐỔI TỪ: content -> bodyMd
     metaDescription?: string
   }>
 }
 
-// API responses (from file 1)
+// API responses (matching backend)
 export interface ContentPageResponse {
   id: number
   slug: string
@@ -216,9 +218,10 @@ export interface ContentPageResponse {
   updatedAt: string
 }
 
+// ⚠️ SỬA: ContentPageTranslationResponse - đổi 'content' thành 'bodyMd'
 export interface ContentPageTranslationResponse {
   title: string
-  bodyMd: string
+  bodyMd: string // ⚠️ ĐỔI TỪ: content -> bodyMd (khớp với backend)
 }
 
 // Requests
@@ -234,9 +237,10 @@ export interface ContentPageUpdateRequest {
   translations?: Record<string, ContentPageTranslationRequest>
 }
 
+// ⚠️ SỬA: ContentPageTranslationRequest - đổi 'content' thành 'bodyMd'
 export interface ContentPageTranslationRequest {
   title: string
-  bodyMd: string
+  bodyMd: string // ⚠️ ĐỔI TỪ: content -> bodyMd (khớp với backend)
 }
 
 // -------------------------------------------
@@ -255,6 +259,25 @@ export interface PropertyFilters {
   query?: string
   locale?: Locale
 }
+
+export interface SiteSetting {
+  id: number
+  key: string
+  value: Record<Locale, string>
+  description?: string
+  updatedAt: string
+}
+
+// Backend response interface (what API actually returns)
+export interface SiteSettingResponse {
+  key: string
+  value: string // Backend default value
+  displayValue: string
+  translations: Record<string, string> // Backend translations object  
+  updatedAt: string
+  updatedBy?: UserSummary
+}
+		
 
 // -------------------------------------------
 // Error & File upload
