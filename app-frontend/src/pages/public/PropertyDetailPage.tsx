@@ -1,4 +1,4 @@
-// app-frontend/src/pages/public/PropertyDetailPage.tsx - FIXED WITH FAVORITES
+// app-frontend/src/pages/public/PropertyDetailPage.tsx
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -30,7 +30,8 @@ import { PropertyService } from '../../services/propertyService'
 import { FavoritesService } from '../../services/favoritesService'
 import PropertyImageGallery from '../../components/property/PropertyImageGallery'
 import PropertyAmenities from '../../components/property/PropertyAmenities'
-import PropertyMap from '../../components/property/PropertyMap'
+// import PropertyMap from '../../components/property/PropertyMap'
+import LeafletMap from '../../components/property/LeafletMap' // Thay thế Google Maps
 import { parseMarkdown } from '../../utils/markdown'
 import type { PropertyDetail, Locale } from '../../types'
 
@@ -43,7 +44,7 @@ const PropertyDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // 🔧 NEW: Favorites state
+  // Favorites state
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteMessage, setFavoriteMessage] = useState('')
 
@@ -63,7 +64,7 @@ const PropertyDetailPage: React.FC = () => {
         const data = await PropertyService.getPropertyBySlug(slug, currentLocale)
         setProperty(data)
         
-        // 🔧 NEW: Check if property is in favorites
+        // Check if property is in favorites
         setIsFavorite(FavoritesService.isFavorite(data.id))
       } catch (err) {
         console.error('Failed to fetch property:', err)
@@ -76,7 +77,7 @@ const PropertyDetailPage: React.FC = () => {
     fetchProperty()
   }, [slug, currentLocale])
 
-  // 🔧 NEW: Handle favorite toggle
+  // Handle favorite toggle
   const handleFavoriteToggle = () => {
     if (!property) return
 
@@ -87,35 +88,56 @@ const PropertyDetailPage: React.FC = () => {
     // Show feedback message
     setFavoriteMessage(
       newIsFavorite 
-        ? t('favouriteAdded') 
+        ? t('favouriteAdded')
         : t('favouriteRemoved')
     )
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(price)
+  const handleBackClick = () => {
+    navigate(-1)
   }
 
+  // Format price
+  const formatPrice = (price: number) => {
+    if (price >= 1000000) {
+      return `${(price / 1000000).toFixed(1)}${t('billion')}`
+    } else if (price >= 1000) {
+      return `${(price / 1000).toFixed(0)}${t('million')}`
+    }
+    return price.toString()
+  }
+
+  // Get property type label
+  const getPropertyTypeLabel = (type: string) => {
+    const typeLabels: Record<string, string> = {
+      APARTMENT: t('apartment'),
+      ROOM: t('room'),
+      STUDIO: t('studio'),
+      HOUSE: t('house')
+    }
+    return typeLabels[type] || type
+  }
+
+  // Loading state
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Skeleton variant="text" width="20%" height={40} sx={{ mb: 2 }} />
+        <Skeleton variant="rectangular" width="100%" height={400} sx={{ mb: 3, borderRadius: 2 }} />
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Skeleton variant="rectangular" height={400} sx={{ mb: 3 }} />
+            <Skeleton variant="text" width="60%" height={40} />
+            <Skeleton variant="text" width="40%" height={30} sx={{ mb: 2 }} />
+            <Skeleton variant="rectangular" width="100%" height={200} />
           </Grid>
           <Grid item xs={12} md={4}>
-            <Skeleton variant="rectangular" height={400} />
+            <Skeleton variant="rectangular" width="100%" height={300} />
           </Grid>
         </Grid>
       </Container>
     )
   }
 
+  // Error state
   if (error || !property) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -123,9 +145,9 @@ const PropertyDetailPage: React.FC = () => {
           {error || 'Property not found'}
         </Alert>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
+          onClick={handleBackClick}
         >
           {t('back')}
         </Button>
@@ -134,125 +156,106 @@ const PropertyDetailPage: React.FC = () => {
   }
 
   // Get current translation
-  const translation = property.translations[currentLocale] || 
-                     property.translations['vi'] || 
-                     Object.values(property.translations)[0]
+  const translation = property.translations?.[currentLocale] || 
+                     property.translations?.['vi'] || 
+                     property.translations?.['en']
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Back Button */}
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate(-1)}
-        sx={{ mb: 3 }}
-      >
-        {t('back')}
-      </Button>
+      <Box sx={{ mb: 3 }}>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackClick}
+          size="small"
+        >
+          {t('back')}
+        </Button>
+      </Box>
 
-      <Grid container spacing={3}>
-        {/* Left - Images */}
+      {/* Image Gallery */}
+      {property.images && property.images.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <PropertyImageGallery images={property.images} />
+        </Box>
+      )}
+
+      {/* Main Content */}
+      <Grid container spacing={4}>
+        {/* Left Column - Details */}
         <Grid item xs={12} md={8}>
-          {property.images && property.images.length > 0 ? (
-            <PropertyImageGallery images={property.images} />
-          ) : (
-            <Box 
-              sx={{ 
-                height: 400, 
-                bgcolor: 'grey.100', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                borderRadius: 1
-              }}
-            >
-              <Stack alignItems="center" spacing={2}>
-                <Typography variant="h1" fontSize="4rem">
-                  🏠
+          {/* Title & Basic Info */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h4" component="h1" gutterBottom>
+                  {translation?.title || property.slug}
                 </Typography>
-                <Typography color="text.secondary">
-                  No images available
-                </Typography>
-              </Stack>
+                
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                  <Chip 
+                    label={getPropertyTypeLabel(property.propertyType)} 
+                    color="primary" 
+                    size="small"
+                  />
+                  {property.code && (
+                    <Chip 
+                      label={`Code: ${property.code}`} 
+                      variant="outlined" 
+                      size="small"
+                    />
+                  )}
+                  {property.isFeatured && (
+                    <Chip 
+                      label={t('featured')} 
+                      color="secondary" 
+                      size="small"
+                    />
+                  )}
+                </Stack>
+              </Box>
+
+              {/* Favorite Button */}
+              <IconButton
+                onClick={handleFavoriteToggle}
+                color={isFavorite ? 'error' : 'default'}
+                size="large"
+              >
+                {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+              </IconButton>
             </Box>
-          )}
-        </Grid>
 
-        {/* Right - Property Info Card */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: 'fit-content', position: 'relative' }}>
-            {/* 🔧 FIXED: Favorite Button with functionality */}
-            <IconButton 
-              onClick={handleFavoriteToggle}
-              color={isFavorite ? "error" : "default"}
-              sx={{ 
-                position: 'absolute',
-                top: 16,
-                right: 16,
-                border: 1, 
-                borderColor: isFavorite ? 'error.main' : 'grey.300',
-                bgcolor: 'background.paper',
-                '&:hover': {
-                  bgcolor: isFavorite ? 'error.50' : 'grey.50'
-                }
-              }}
-            >
-              {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-            </IconButton>
-
-            {/* Property Code */}
-            <Typography variant="h6" color="primary" fontWeight="bold" sx={{ mb: 1, pr: 6 }}>
-              {property.code}
-            </Typography>
-            
-            {/* Property Title */}
-            <Typography variant="h5" component="h1" fontWeight="bold" sx={{ mb: 2, pr: 6 }}>
-              {translation?.title || property.slug}
-            </Typography>
-
-            {/* Featured Badge */}
-            {property.isFeatured && (
-              <Chip
-                label={t('featured')}
-                color="secondary"
-                sx={{ mb: 2 }}
-              />
-            )}
-            
             {/* Price */}
-            <Typography variant="h4" color="primary" fontWeight="bold" sx={{ mb: 3 }}>
-              {formatPrice(property.priceMonth)}
-              <Typography component="span" variant="body1" color="text.secondary">
-                {currentLocale === 'vi' ? '/tháng' : currentLocale === 'ja' ? '/月' : '/month'}
-              </Typography>
+            <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold', mb: 3 }}>
+              {formatPrice(property.priceMonth)} VND{t('perMonth')}
             </Typography>
 
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Property Details */}
-            <Stack spacing={2} sx={{ mb: 3 }}>
+            {/* Property Stats */}
+            <Stack direction="row" spacing={3} flexWrap="wrap">
               {property.areaSqm && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <AreaIcon color="action" />
                   <Typography>
-                    <strong>{property.areaSqm}</strong> {t('sqm')}
+                    <strong>{property.areaSqm}{t('sqm')}</strong>
                   </Typography>
                 </Box>
               )}
-              
-              {property.bedrooms && property.bedrooms > 0 && (
+
+              {property.bedrooms && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <BedIcon color="action" />
                   <Typography>
-                    <strong>{property.bedrooms}</strong> {t('bedrooms')}
+                    <strong>{property.bedrooms} {t('bedrooms')}</strong>
                   </Typography>
                 </Box>
               )}
-              
-              {property.bathrooms && property.bathrooms > 0 && (
+
+              {property.bathrooms && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <BathIcon color="action" />
                   <Typography>
-                    <strong>{property.bathrooms}</strong> {t('bathrooms')}
+                    <strong>{property.bathrooms} {t('bathrooms')}</strong>
                   </Typography>
                 </Box>
               )}
@@ -275,6 +278,53 @@ const PropertyDetailPage: React.FC = () => {
                 {t('last_updated')}: {new Date(property.publishedAt).toLocaleDateString(currentLocale)}
               </Typography>
             )}
+          </Paper>
+        </Grid>
+
+        {/* Right Column - Contact Info */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3, position: 'sticky', top: 24 }}>
+            <Typography variant="h6" gutterBottom>
+              {t('contactInfo')}
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {t('contactFormInstruction')}
+            </Typography>
+
+            <Stack spacing={2}>
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                onClick={() => {
+                  // Open contact dialog or navigate to contact page
+                  navigate('/contact')
+                }}
+              >
+                {t('contactUs')}
+              </Button>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => {
+                  window.open(`tel:0903228571`)
+                }}
+              >
+                {t('callNow')}
+              </Button>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => {
+                  window.open(`https://zalo.me/0903228571`, '_blank')
+                }}
+              >
+                {t('contactZalo')}
+              </Button>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
@@ -309,7 +359,7 @@ const PropertyDetailPage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Map */}
+      {/* Map - Using LeafletMap instead of Google Maps */}
       {(property.latitude && property.longitude) && (
         <Paper sx={{ p: 3, mt: 3 }}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -321,10 +371,11 @@ const PropertyDetailPage: React.FC = () => {
               {translation?.addressText || property.addressLine}
             </Typography>
           )}
-          <PropertyMap
+          <LeafletMap
             latitude={property.latitude}
             longitude={property.longitude}
             title={translation?.title || property.slug}
+            address={translation?.addressText || property.addressLine}
           />
         </Paper>
       )}
@@ -338,6 +389,30 @@ const PropertyDetailPage: React.FC = () => {
           </Typography>
           <Typography color="text.secondary">
             {translation?.addressText || property.addressLine}
+          </Typography>
+        </Paper>
+      )}
+
+      {/* Pet Policy */}
+      {property.petPolicy && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            {t('petPolicy')}
+          </Typography>
+          <Typography color="text.secondary">
+            {property.petPolicy}
+          </Typography>
+        </Paper>
+      )}
+
+      {/* View Description */}
+      {property.viewDesc && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            {t('viewDescription')}
+          </Typography>
+          <Typography color="text.secondary">
+            {property.viewDesc}
           </Typography>
         </Paper>
       )}

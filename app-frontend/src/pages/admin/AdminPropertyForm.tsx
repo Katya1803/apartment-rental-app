@@ -36,6 +36,8 @@ import { ROUTES } from '../../config/constants'
 import PropertyImageUpload from '../../components/admin/PropertyImageUpload'
 import GoogleMapPicker from '../../components/admin/GoogleMapPicker'
 import type { PropertyDetail, PropertyType, PropertyStatus, Amenity, PropertyImage } from '../../types'
+import LeafletMapPicker from '../../components/admin/LeafletMapPicker'
+
 
 interface PropertyFormData {
   slug: string
@@ -586,12 +588,12 @@ const AdminPropertyForm: React.FC = () => {
                     <LocationIcon />
                     Property Location
                   </Typography>
-                  <GoogleMapPicker
-                    latitude={formData.latitude}
-                    longitude={formData.longitude}
-                    onLocationChange={handleLocationChange}
-                    height={350}
-                  />
+                <LeafletMapPicker
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  onLocationChange={handleLocationChange}
+                  height={350}
+                />
                 </Grid>
 
                 <Grid item xs={12}>
