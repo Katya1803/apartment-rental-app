@@ -1,3 +1,4 @@
+// app-frontend/src/components/layout/PublicLayout.tsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -22,13 +23,14 @@ import {
 } from '@mui/icons-material'
 import { APP_NAME, ROUTES, STORAGE_KEYS } from '../../config/constants'
 import { useContentPages } from '../../hooks/useContentPages'
+import { FloatingContactIcons } from '../common/FloatingContactIcons'
 import type { Locale } from '../../types'
 
 interface PublicLayoutProps {
   children: React.ReactNode
 }
 
-export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
+const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t, i18n } = useTranslation()
@@ -122,7 +124,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 endIcon={<ArrowDownIcon />}
                 sx={{ textTransform: 'none', fontSize: '1rem' }}
               >
-                {t('guides')}
+                {t('guide')}
               </Button>
 
               <Menu
@@ -142,7 +144,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 ) : contentPages?.length === 0 ? (
                   <MenuItem disabled>
                     <Typography variant="body2" color="text.secondary">
-                      {t('no_guides_available')}
+                      Chưa có hướng dẫn nào
                     </Typography>
                   </MenuItem>
                 ) : (
@@ -151,23 +153,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                       key={page.id}
                       onClick={() => handleGuideItemClick(page.slug)}
                     >
-                      <Typography variant="body2">
-                        {page.title}
-                      </Typography>
+                      {page.translations[i18n.language]?.title || page.slug}
                     </MenuItem>
                   ))
                 )}
-                <Divider />
-                <MenuItem onClick={() => {
-                  navigate('/guides')
-                  setGuideMenu(null)
-                }}>
-                  <Typography variant="body2" color="primary">
-                    {t('view_all_guides')}
-                  </Typography>
-                </MenuItem>
               </Menu>
-
+              
               <Button
                 color={isActivePage(ROUTES.CONTACT) ? 'primary' : 'inherit'}
                 onClick={() => handleNavigation(ROUTES.CONTACT)}
@@ -177,13 +168,13 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               </Button>
             </Box>
 
-            {/* Right: Language Switcher & Favorites */}
+            {/* Right: Language & Favorites */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {/* Language Switcher */}
               <Button
                 startIcon={<LanguageIcon />}
                 onClick={(e) => setLanguageMenu(e.currentTarget)}
-                sx={{ textTransform: 'none', color: 'text.primary' }}
+                sx={{ textTransform: 'none', color: 'text.primary', display: { xs: 'none', sm: 'flex' } }}
               >
                 <span style={{ marginRight: 4 }}>{currentLanguage.flag}</span>
                 {currentLanguage.label}
@@ -246,7 +237,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               color={isActivePage('/content') ? 'primary' : 'inherit'}
               onClick={() => navigate('/guides')}
             >
-              {t('guides')}
+              {t('guide')}
             </Button>
             
             <Button
@@ -264,6 +255,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       <Box component="main" sx={{ flexGrow: 1 }}>
         {children}
       </Box>
+
+      {/* Floating Contact Icons - NEW FEATURE */}
+      <FloatingContactIcons />
 
       {/* Footer placeholder */}
       <Box component="footer" sx={{ mt: 'auto', py: 3, bgcolor: 'grey.100' }}>

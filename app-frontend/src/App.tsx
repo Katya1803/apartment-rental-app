@@ -5,6 +5,9 @@ import { I18nextProvider } from 'react-i18next'
 import { theme } from './styles/theme'
 import { useAuthStore } from './stores/authStore'
 import i18n from './config/i18n'
+import './components/common/ContactDialog'
+import './components/common/FloatingContactIcons'
+import './services/companyService'
 
 import './styles/globals.css'
 

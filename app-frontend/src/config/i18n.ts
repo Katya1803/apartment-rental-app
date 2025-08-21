@@ -212,6 +212,7 @@ const resources = {
       million: 'million',
       billion: 'billion',
       
+      
       // Validation
       required: 'This field is required',
       invalidEmail: 'Invalid email address',
