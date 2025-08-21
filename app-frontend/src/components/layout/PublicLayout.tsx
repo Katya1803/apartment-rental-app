@@ -1,4 +1,4 @@
-// app-frontend/src/components/layout/PublicLayout.tsx
+// app-frontend/src/components/layout/PublicLayout.tsx - FIXED VERSION
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +15,8 @@ import {
   Badge,
   Stack,
   Divider,
-  Grid
+  Grid,
+  CircularProgress
 } from '@mui/material'
 import {
   Language as LanguageIcon,
@@ -24,8 +25,9 @@ import {
 } from '@mui/icons-material'
 import { APP_NAME, ROUTES, STORAGE_KEYS } from '../../config/constants'
 import { useContentPages } from '../../hooks/useContentPages'
-import { FavoritesService } from '../../services/favoritesService' // ⚠️ THÊM import
+import { FavoritesService } from '../../services/favoritesService'
 import { FloatingContactIcons } from '../common/FloatingContactIcons'
+import { CompanyService, type CompanyInfo } from '../../services/companyService'
 import type { Locale } from '../../types'
 
 interface PublicLayoutProps {
@@ -40,12 +42,16 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const [languageMenu, setLanguageMenu] = useState<null | HTMLElement>(null)
   const [guideMenu, setGuideMenu] = useState<null | HTMLElement>(null)
   const [favoriteCount, setFavoriteCount] = useState(0)
+  
+  // 🔧 NEW: Company info state
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null)
+  const [companyInfoLoading, setCompanyInfoLoading] = useState(true)
 
   // Fetch content pages for guide dropdown
   const { data: contentPages, isLoading: contentLoading } = useContentPages(i18n.language as Locale)
 
   useEffect(() => {
-    // ⚠️ SỬA: Load favorites and listen to storage changes
+    // Load favorites and listen to storage changes
     const updateFavoriteCount = () => {
       setFavoriteCount(FavoritesService.getFavoritesCount())
     }
@@ -60,7 +66,33 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, []) // ⚠️ SỬA: Bỏ dependency location.pathname
+  }, [])
+
+  // 🔧 NEW: Load company info on mount and language change
+  useEffect(() => {
+    loadCompanyInfo()
+  }, [i18n.language])
+
+  const loadCompanyInfo = async () => {
+    try {
+      setCompanyInfoLoading(true)
+      const info = await CompanyService.getCompanyInfo(i18n.language as Locale)
+      setCompanyInfo(info)
+    } catch (error) {
+      console.error('Failed to load company info:', error)
+      // Set fallback data if API fails
+      setCompanyInfo({
+        companyName: 'Q Apartment',
+        companyEmail: 'q.apartment09hbm@gmail.com',
+        companyPhone: '0903228571',
+        companyAddress: 'Hanoi, Vietnam',
+        facebookUrl: '#',
+        zaloPhone: '0903228571'
+      })
+    } finally {
+      setCompanyInfoLoading(false)
+    }
+  }
 
   const isActivePage = (path: string): boolean => {
     if (path === ROUTES.HOME) {
@@ -99,21 +131,29 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       <AppBar position="sticky" sx={{ backgroundColor: '#fff', color: 'text.primary', boxShadow: 1 }}>
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-            {/* Left: Logo */}
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{ 
-                fontWeight: 'bold', 
-                color: 'primary.main',
-                cursor: 'pointer'
-              }}
-              onClick={() => handleNavigation(ROUTES.HOME)}
-            >
-              {APP_NAME}
-            </Typography>
+            {/* Left: Logo & Company Name */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {/* Vite Logo */}
+              <img 
+                src="/vite.svg" 
+                alt="Logo" 
+                style={{ width: 32, height: 32 }}
+              />
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{ 
+                  fontWeight: 'bold', 
+                  color: 'primary.main',
+                  cursor: 'pointer'
+                }}
+                onClick={() => handleNavigation(ROUTES.HOME)}
+              >
+                {APP_NAME}
+              </Typography>
+            </Box>
 
-            {/* Center: Navigation (Desktop) */}
+            {/* Center: Navigation (Desktop) - Only Home & Guide */}
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
               <Button
                 color={isActivePage(ROUTES.HOME) ? 'primary' : 'inherit'}
@@ -121,14 +161,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 sx={{ textTransform: 'none', fontSize: '1rem' }}
               >
                 {t('home')}
-              </Button>
-              
-              <Button
-                color={isActivePage('/properties') ? 'primary' : 'inherit'}
-                onClick={() => handleNavigation('/properties')}
-                sx={{ textTransform: 'none', fontSize: '1rem' }}
-              >
-                {t('properties')}
               </Button>
               
               <Button
@@ -163,14 +195,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                   </>
                 )}
               </Menu>
-              
-              <Button
-                color={isActivePage(ROUTES.CONTACT) ? 'primary' : 'inherit'}
-                onClick={() => handleNavigation(ROUTES.CONTACT)}
-                sx={{ textTransform: 'none', fontSize: '1rem' }}
-              >
-                {t('contact')}
-              </Button>
             </Box>
 
             {/* Right: Language & Favorites */}
@@ -231,26 +255,10 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             
             <Button
               size="small"
-              color={isActivePage('/properties') ? 'primary' : 'inherit'}
-              onClick={() => handleNavigation('/properties')}
-            >
-              {t('properties')}
-            </Button>
-            
-            <Button
-              size="small"
               color={isActivePage('/content') ? 'primary' : 'inherit'}
               onClick={() => navigate('/guides')}
             >
               {t('guide')}
-            </Button>
-            
-            <Button
-              size="small"
-              color={isActivePage(ROUTES.CONTACT) ? 'primary' : 'inherit'}
-              onClick={() => handleNavigation(ROUTES.CONTACT)}
-            >
-              {t('contact')}
             </Button>
 
             {/* Mobile Language Switcher */}
@@ -272,69 +280,72 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       {/* Floating Contact Icons */}
       <FloatingContactIcons />
 
-      {/* Footer */}
+      {/* Footer - 🔧 SIMPLIFIED: Only Contact & Address with Dynamic Data */}
       <Box component="footer" sx={{ bgcolor: 'grey.900', color: 'white', py: 4, mt: 'auto' }}>
         <Container maxWidth="lg">
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="h6" gutterBottom>
-                {APP_NAME}
-              </Typography>
-              <Typography variant="body2" color="grey.400">
-                {t('footerDescription')}
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="h6" gutterBottom>
-                {t('quickLinks')}
-              </Typography>
-              <Stack spacing={1}>
-                <Button color="inherit" onClick={() => handleNavigation(ROUTES.HOME)} sx={{ justifyContent: 'flex-start' }}>
-                  {t('home')}
-                </Button>
-                <Button color="inherit" onClick={() => handleNavigation('/properties')} sx={{ justifyContent: 'flex-start' }}>
-                  {t('properties')}
-                </Button>
-                <Button color="inherit" onClick={() => handleNavigation(ROUTES.CONTACT)} sx={{ justifyContent: 'flex-start' }}>
-                  {t('contact')}
-                </Button>
-              </Stack>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
+          <Grid container spacing={4} justifyContent="center">
+            {/* Contact Section */}
+            <Grid item xs={12} sm={6} md={4}>
               <Typography variant="h6" gutterBottom>
                 {t('contact')}
               </Typography>
-              <Stack spacing={1}>
+              
+              {companyInfoLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} />
+                  <Typography variant="body2" color="grey.400">
+                    Loading...
+                  </Typography>
+                </Box>
+              ) : companyInfo ? (
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="grey.400" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📧 Email: {companyInfo.companyEmail}
+                  </Typography>
+                  <Typography variant="body2" color="grey.400" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📱 Phone: {companyInfo.companyPhone}
+                  </Typography>
+                  <Typography variant="body2" color="grey.400" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    💬 Zalo: {companyInfo.zaloPhone || companyInfo.companyPhone}
+                  </Typography>
+                </Stack>
+              ) : (
                 <Typography variant="body2" color="grey.400">
-                  📧 q.apartment09hbm@gmail.com
+                  {t('contactInfo')}
                 </Typography>
-                <Typography variant="body2" color="grey.400">
-                  📱 0903228571
-                </Typography>
-                <Typography variant="body2" color="grey.400">
-                  💬 Zalo: 0903228571
-                </Typography>
-              </Stack>
+              )}
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Address Section */}
+            <Grid item xs={12} sm={6} md={4}>
               <Typography variant="h6" gutterBottom>
-                {t('followUs')}
+                {t('address')}
               </Typography>
-              <Stack direction="row" spacing={1}>
-                <Typography variant="body2" color="grey.400">
-                  🌐 {t('comingSoon')}
+              
+              {companyInfoLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} />
+                  <Typography variant="body2" color="grey.400">
+                    Loading...
+                  </Typography>
+                </Box>
+              ) : companyInfo ? (
+                <Typography variant="body2" color="grey.400" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  📍 {companyInfo.companyAddress}
                 </Typography>
-              </Stack>
+              ) : (
+                <Typography variant="body2" color="grey.400">
+                  Hanoi, Vietnam
+                </Typography>
+              )}
             </Grid>
           </Grid>
           
           <Divider sx={{ my: 3, borderColor: 'grey.700' }} />
           
+          {/* Copyright - Always in English */}
           <Typography variant="body2" color="grey.400" align="center">
-            © 2024 {APP_NAME}. {t('allRightsReserved')}
+            © 2024 {APP_NAME}. All rights reserved
           </Typography>
         </Container>
       </Box>

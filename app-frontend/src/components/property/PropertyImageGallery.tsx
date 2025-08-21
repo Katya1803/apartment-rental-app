@@ -1,4 +1,4 @@
-// app-frontend/src/components/property/PropertyImageGallery.tsx
+// app-frontend/src/components/property/PropertyImageGallery.tsx - FIXED THUMBNAILS
 import React, { useState } from 'react'
 import {
   Box,
@@ -164,25 +164,46 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
           </Box>
         </Box>
 
-        {/* Thumbnail Navigation */}
+        {/* 🔧 FIXED: Thumbnail Navigation with consistent sizes */}
         {sortedImages.length > 1 && (
-          <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            overflowX: 'auto', 
+            pb: 1,
+            '&::-webkit-scrollbar': {
+              height: 8,
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: 4,
+            }
+          }}>
             {sortedImages.map((image, index) => (
               <Box
                 key={image.id}
                 onClick={() => setCurrentImageIndex(index)}
                 sx={{
-                  minWidth: 80,
-                  height: 60,
+                  // 🔧 FIXED: Consistent thumbnail dimensions
+                  minWidth: 100,        // Fixed width
+                  width: 100,           // Fixed width
+                  height: 70,           // Fixed height
                   cursor: 'pointer',
                   borderRadius: 1,
                   overflow: 'hidden',
-                  border: currentImageIndex === index ? 2 : 1,
+                  border: 2,
                   borderColor: currentImageIndex === index ? 'primary.main' : 'divider',
                   opacity: currentImageIndex === index ? 1 : 0.7,
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    opacity: 1
-                  }
+                    opacity: 1,
+                    borderColor: 'primary.main'
+                  },
+                  flexShrink: 0         // Prevent shrinking
                 }}
               >
                 <img
@@ -191,7 +212,8 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover'
+                    objectFit: 'cover',   // 🔧 FIXED: Crop to fill container
+                    display: 'block'
                   }}
                 />
               </Box>
@@ -200,7 +222,7 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
         )}
       </Box>
 
-      {/* Lightbox */}
+      {/* Lightbox Dialog */}
       <Dialog
         open={lightboxOpen}
         onClose={handleClose}
@@ -208,25 +230,15 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
         fullWidth
         sx={{
           '& .MuiDialog-paper': {
-            bgcolor: 'rgba(0, 0, 0, 0.95)',
+            bgcolor: 'black',
             boxShadow: 'none',
-            m: 0,
             maxHeight: '100vh',
-            height: '100vh'
+            m: 0
           }
         }}
         onKeyDown={handleKeyDown}
       >
-        <DialogContent 
-          sx={{ 
-            p: 0, 
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%'
-          }}
-        >
+        <DialogContent sx={{ p: 0, position: 'relative', bgcolor: 'black' }}>
           {/* Close button */}
           <IconButton
             onClick={handleClose}
@@ -245,7 +257,7 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
             <CloseIcon />
           </IconButton>
 
-          {/* Navigation buttons */}
+          {/* Navigation arrows */}
           {sortedImages.length > 1 && (
             <>
               <IconButton
@@ -253,6 +265,8 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
                 sx={{
                   position: 'absolute',
                   left: 16,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   color: 'white',
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
                   zIndex: 2,
@@ -269,6 +283,8 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
                 sx={{
                   position: 'absolute',
                   right: 16,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   color: 'white',
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
                   zIndex: 2,

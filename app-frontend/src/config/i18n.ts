@@ -1,3 +1,4 @@
+// app-frontend/src/config/i18n.ts - FIXED WITH ALL TRANSLATION KEYS
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { DEFAULT_LOCALE, STORAGE_KEYS } from './constants'
@@ -32,7 +33,16 @@ const resources = {
       favourites: 'Yêu thích',
       contact: 'Liên hệ',
       guide: 'Hướng dẫn',
+      guides: 'Hướng dẫn', // 🔧 FIXED: Added plural form
       about: 'Giới thiệu',
+      
+      // 🔧 FIXED: Guide-related translations
+      allGuides: 'Tất cả hướng dẫn',
+      back_to_guides: 'Quay lại hướng dẫn',
+      helpful_guides: 'Hướng dẫn hữu ích',
+      guides_description: 'Tìm hiểu các thông tin hữu ích để thuê nhà tại Hà Nội',
+      content_not_found: 'Không tìm thấy nội dung',
+      last_updated: 'Cập nhật lần cuối',
       
       // Property
       apartment: 'Căn hộ',
@@ -81,8 +91,8 @@ const resources = {
       addToFavourites: 'Thêm vào yêu thích',
       removeFromFavourites: 'Bỏ khỏi yêu thích',
       noFavourites: 'Bạn chưa có bất động sản yêu thích nào',
-      favouriteAdded: 'Đã thêm vào danh sách yêu thích',
-      favouriteRemoved: 'Đã bỏ khỏi danh sách yêu thích',
+      favouriteAdded: 'Đã thêm vào yêu thích',
+      favouriteRemoved: 'Đã bỏ khỏi yêu thích',
       
       // Property listing
       noPropertiesFound: 'Không tìm thấy bất động sản nào',
@@ -90,7 +100,7 @@ const resources = {
       loadMore: 'Tải thêm',
       
       // Currency & Units
-      vnd: 'VNĐ',
+      vnd: 'VND',
       sqm: 'm²',
       perMonth: '/tháng',
       million: 'triệu',
@@ -112,12 +122,16 @@ const resources = {
       
       // Footer
       allRightsReserved: 'Tất cả quyền được bảo lưu',
+      footerDescription: 'Cho thuê căn hộ và phòng trọ chất lượng cao tại Hà Nội dành cho khách hàng quốc tế và trong nước.',
+      quickLinks: 'Liên kết nhanh',
+      followUs: 'Theo dõi chúng tôi',
+      comingSoon: 'Sắp ra mắt',
       
       // Messages
-      messageSuccess: 'Tin nhắn đã được gửi thành công!',
+      messageSuccess: 'Gửi tin nhắn thành công!',
       messageError: 'Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.',
-      loadingProperties: 'Đang tải danh sách bất động sản...',
-      loadingPropertyDetails: 'Đang tải thông tin chi tiết...'
+      loadingProperties: 'Đang tải bất động sản...',
+      loadingPropertyDetails: 'Đang tải chi tiết bất động sản...'
     }
   },
   en: {
@@ -145,10 +159,19 @@ const resources = {
       properties: 'Properties',
       apartments: 'Apartments',
       rooms: 'Rooms',
-      favourites: 'Favourites',
+      favourites: 'Favorites',
       contact: 'Contact',
       guide: 'Guide',
+      guides: 'Guides', // 🔧 FIXED: Added plural form
       about: 'About',
+      
+      // 🔧 FIXED: Guide-related translations
+      allGuides: 'All Guides',
+      back_to_guides: 'Back to Guides',
+      helpful_guides: 'Helpful Guides',
+      guides_description: 'Find useful information for renting apartments in Hanoi',
+      content_not_found: 'Content not found',
+      last_updated: 'Last updated',
       
       // Property
       apartment: 'Apartment',
@@ -212,7 +235,6 @@ const resources = {
       million: 'million',
       billion: 'billion',
       
-      
       // Validation
       required: 'This field is required',
       invalidEmail: 'Invalid email address',
@@ -229,6 +251,10 @@ const resources = {
       
       // Footer
       allRightsReserved: 'All rights reserved',
+      footerDescription: 'Quality apartment and room rentals in Hanoi for international and domestic customers.',
+      quickLinks: 'Quick Links',
+      followUs: 'Follow Us',
+      comingSoon: 'Coming Soon',
       
       // Messages
       messageSuccess: 'Message sent successfully!',
@@ -265,7 +291,16 @@ const resources = {
       favourites: 'お気に入り',
       contact: 'お問い合わせ',
       guide: 'ガイド',
+      guides: 'ガイド', // 🔧 FIXED: Added plural form (same as singular in Japanese)
       about: '会社概要',
+      
+      // 🔧 FIXED: Guide-related translations
+      allGuides: 'すべてのガイド',
+      back_to_guides: 'ガイドに戻る',
+      helpful_guides: '役立つガイド',
+      guides_description: 'ハノイでの住宅探しに役立つ情報をご覧ください',
+      content_not_found: 'コンテンツが見つかりません',
+      last_updated: '最終更新日',
       
       // Property
       apartment: 'アパート',
@@ -345,6 +380,10 @@ const resources = {
       
       // Footer
       allRightsReserved: 'すべての権利を保有',
+      footerDescription: 'ハノイで国際的および国内顧客向けの高品質なアパートと部屋の賃貸',
+      quickLinks: 'クイックリンク',
+      followUs: 'フォローする',
+      comingSoon: '近日公開',
       
       // Messages
       messageSuccess: 'メッセージが正常に送信されました！',

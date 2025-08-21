@@ -1,16 +1,18 @@
-// app-frontend/src/services/propertyService.ts - Thêm method getPropertyBySlug
+// app-frontend/src/services/propertyService.ts - FIXED VERSION
 import { publicApi, adminApi } from '../config/axios'
 import { API_ENDPOINTS } from '../config/constants'
 import type { 
-  PropertySummary, 
-  PropertyDetail, 
   ApiResponse, 
   PageResponse, 
-  PropertyType,
-  PropertyStatus,
-  Locale 
+  PropertySummary, 
+  PropertyDetail, 
+  PropertyType, 
+  PropertyStatus, 
+  Locale,
+  PropertyImage // 🔧 Added PropertyImage type
 } from '../types'
 
+// Property filters interface
 export interface PropertyFilters {
   query?: string
   propertyType?: PropertyType
@@ -22,6 +24,12 @@ export interface PropertyFilters {
   minBedrooms?: number
   maxBedrooms?: number
   isFeatured?: boolean
+}
+
+// 🔧 NEW: Image upload request interface
+export interface ImageUploadRequest {
+  sortOrder?: number
+  isCover?: boolean
 }
 
 export class PropertyService {
@@ -52,7 +60,7 @@ export class PropertyService {
     return response.data.data
   }
 
-  // Get property by slug - METHOD MỚI
+  // Get property by slug
   static async getPropertyBySlug(slug: string, locale: Locale = 'vi'): Promise<PropertyDetail> {
     const response = await publicApi.get<ApiResponse<PropertyDetail>>(
       `${API_ENDPOINTS.PROPERTIES}/${slug}?locale=${locale}`
@@ -128,5 +136,79 @@ export class PropertyService {
   // Delete property
   static async deleteProperty(id: number): Promise<void> {
     await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}`)
+  }
+
+  // 🔧 NEW: Get property images
+  static async getPropertyImages(propertyId: number): Promise<PropertyImage[]> {
+    const response = await adminApi.get<ApiResponse<PropertyImage[]>>(
+      `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`
+    )
+    
+    return response.data.data
+  }
+
+  // 🔧 NEW: Upload property image
+  static async uploadPropertyImage(
+    propertyId: number, 
+    file: File, 
+    options: ImageUploadRequest = {}
+  ): Promise<PropertyImage> {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    if (options.sortOrder !== undefined) {
+      formData.append('sortOrder', options.sortOrder.toString())
+    }
+    
+    if (options.isCover !== undefined) {
+      formData.append('isCover', options.isCover.toString())
+    }
+
+    const response = await adminApi.post<ApiResponse<PropertyImage>>(
+      `${API_ENDPOINTS.ADMIN.PROPERTIES}/${propertyId}/images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    
+    return response.data.data
+  }
+
+  // 🔧 NEW: Delete property image
+  static async deletePropertyImage(propertyId: number, imageId: number): Promise<void> {
+    await adminApi.delete(`${API_ENDPOINTS.ADMIN.PROPERTIES}/images/${imageId}`)
+  }
+
+  // 🔧 NEW: Update image sort order
+  static async updateImageSortOrder(imageId: number, sortOrder: number): Promise<void> {
+    await adminApi.patch(
+      `${API_ENDPOINTS.ADMIN.PROPERTIES}/images/${imageId}/sort-order`,
+      null,
+      {
+        params: { sortOrder }
+      }
+    )
+  }
+
+  // 🔧 NEW: Set cover image
+  static async setCoverImage(imageId: number): Promise<void> {
+    await adminApi.patch(`${API_ENDPOINTS.ADMIN.PROPERTIES}/images/${imageId}/set-cover`)
+  }
+
+  // 🔧 NEW: Check slug availability
+  static async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+    const params = new URLSearchParams()
+    if (excludeId) {
+      params.append('excludeId', excludeId.toString())
+    }
+
+    const response = await adminApi.get<ApiResponse<boolean>>(
+      `${API_ENDPOINTS.ADMIN.PROPERTIES}/slug/${slug}/available?${params}`
+    )
+    
+    return response.data.data
   }
 }
