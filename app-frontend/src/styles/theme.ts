@@ -1,8 +1,7 @@
-// src/styles/theme.ts - Comprehensive Theme Configuration
-import { createTheme } from '@mui/material/styles'
-import type { ThemeOptions } from '@mui/material/styles'
+// app-frontend/src/styles/theme.ts
+import { createTheme, type ThemeOptions } from '@mui/material/styles'
 
-// Custom color palette
+// Color palette
 const colors = {
   primary: {
     50: '#e3f2fd',
@@ -10,11 +9,11 @@ const colors = {
     200: '#90caf9',
     300: '#64b5f6',
     400: '#42a5f5',
-    500: '#2196f3',  // Main primary
-    600: '#1976d2',  // Primary main (default)
+    500: '#2196f3',
+    600: '#1976d2',
     700: '#1565c0',
     800: '#0d47a1',
-    900: '#0a3d91'
+    900: '#0a369d',
   },
   secondary: {
     50: '#fce4ec',
@@ -26,7 +25,43 @@ const colors = {
     600: '#d81b60',
     700: '#c2185b',
     800: '#ad1457',
-    900: '#880e4f'
+    900: '#880e4f',
+  },
+  success: {
+    50: '#e8f5e8',
+    100: '#c8e6c9',
+    200: '#a5d6a7',
+    300: '#81c784',
+    400: '#66bb6a',
+    500: '#4caf50',
+    600: '#43a047',
+    700: '#388e3c',
+    800: '#2e7d32',
+    900: '#1b5e20',
+  },
+  warning: {
+    50: '#fff3e0',
+    100: '#ffe0b2',
+    200: '#ffcc80',
+    300: '#ffb74d',
+    400: '#ffa726',
+    500: '#ff9800',
+    600: '#fb8c00',
+    700: '#f57c00',
+    800: '#ef6c00',
+    900: '#e65100',
+  },
+  error: {
+    50: '#ffebee',
+    100: '#ffcdd2',
+    200: '#ef9a9a',
+    300: '#e57373',
+    400: '#ef5350',
+    500: '#f44336',
+    600: '#e53935',
+    700: '#d32f2f',
+    800: '#c62828',
+    900: '#b71c1c',
   },
   gray: {
     50: '#fafafa',
@@ -38,49 +73,21 @@ const colors = {
     600: '#757575',
     700: '#616161',
     800: '#424242',
-    900: '#212121'
+    900: '#212121',
   },
-  success: {
-    50: '#e8f5e8',
-    100: '#c8e6c9',
-    200: '#a5d6a7',
-    300: '#81c784',
-    400: '#66bb6a',
-    500: '#4caf50',  // Main
-    600: '#43a047',
-    700: '#388e3c',
-    800: '#2e7d32',
-    900: '#1b5e20'
-  },
-  warning: {
-    50: '#fff3e0',
-    100: '#ffe0b2',
-    200: '#ffcc80',
-    300: '#ffb74d',
-    400: '#ffa726',
-    500: '#ff9800',  // Main
-    600: '#fb8c00',
-    700: '#f57c00',
-    800: '#ef6c00',
-    900: '#e65100'
-  },
-  error: {
-    50: '#ffebee',
-    100: '#ffcdd2',
-    200: '#ef9a9a',
-    300: '#e57373',
-    400: '#ef5350',
-    500: '#f44336',  // Main
-    600: '#e53935',
-    700: '#d32f2f',
-    800: '#c62828',
-    900: '#b71c1c'
-  }
 }
 
-// Typography configuration
-const typography = {
-  fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+// Typography
+const typography: ThemeOptions['typography'] = {
+  fontFamily: [
+    'Roboto',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    '"Helvetica Neue"',
+    'Arial',
+    'sans-serif',
+  ].join(','),
   h1: {
     fontSize: '2.25rem',   // 36px
     fontWeight: 700,
@@ -223,6 +230,7 @@ const components: ThemeOptions['components'] = {
     styleOverrides: {
       root: {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        borderRadius: 0, // Bỏ bo góc cho AppBar
       },
     },
   },

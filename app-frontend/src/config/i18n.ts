@@ -1,4 +1,4 @@
-// app-frontend/src/config/i18n.ts - FIXED WITH ALL TRANSLATION KEYS
+// app-frontend/src/config/i18n.ts - UPDATED WITH CONTACT ICON TRANSLATIONS
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { DEFAULT_LOCALE, STORAGE_KEYS } from './constants'
@@ -33,10 +33,10 @@ const resources = {
       favourites: 'Yêu thích',
       contact: 'Liên hệ',
       guide: 'Hướng dẫn',
-      guides: 'Hướng dẫn', // 🔧 FIXED: Added plural form
+      guides: 'Hướng dẫn',
       about: 'Giới thiệu',
       
-      // 🔧 FIXED: Guide-related translations
+      // Guide-related translations
       allGuides: 'Tất cả hướng dẫn',
       back_to_guides: 'Quay lại hướng dẫn',
       helpful_guides: 'Hướng dẫn hữu ích',
@@ -86,6 +86,17 @@ const resources = {
       message: 'Tin nhắn',
       sendMessage: 'Gửi tin nhắn',
       contactInfo: 'Thông tin liên hệ',
+      
+      // Contact Icons & Phone Dialog
+      sendEmailContact: 'Gửi email liên hệ',
+      phoneContact: 'Liên hệ điện thoại',
+      phoneContactTitle: 'Liên hệ điện thoại',
+      phoneContactDescription: 'Bạn có thể gọi trực tiếp hoặc liên hệ qua Zalo để được hỗ trợ nhanh chóng.',
+      callNow: 'Gọi ngay',
+      contactZalo: 'Liên hệ Zalo',
+      phoneCopied: 'Đã sao chép số điện thoại',
+      contactFormInstruction: 'Vui lòng điền đầy đủ thông tin dưới đây. Chúng tôi sẽ phản hồi trong vòng 24 giờ. Để được hỗ trợ nhanh hơn, bạn có thể gọi trực tiếp hoặc liên hệ qua Zalo.',
+      sending: 'Đang gửi...',
       
       // Favourites
       addToFavourites: 'Thêm vào yêu thích',
@@ -162,10 +173,10 @@ const resources = {
       favourites: 'Favorites',
       contact: 'Contact',
       guide: 'Guide',
-      guides: 'Guides', // 🔧 FIXED: Added plural form
+      guides: 'Guides',
       about: 'About',
       
-      // 🔧 FIXED: Guide-related translations
+      // Guide-related translations
       allGuides: 'All Guides',
       back_to_guides: 'Back to Guides',
       helpful_guides: 'Helpful Guides',
@@ -215,6 +226,17 @@ const resources = {
       message: 'Message',
       sendMessage: 'Send Message',
       contactInfo: 'Contact Information',
+      
+      // Contact Icons & Phone Dialog
+      sendEmailContact: 'Send email contact',
+      phoneContact: 'Phone contact',
+      phoneContactTitle: 'Phone Contact',
+      phoneContactDescription: 'You can call directly or contact via Zalo for quick support.',
+      callNow: 'Call Now',
+      contactZalo: 'Contact Zalo',
+      phoneCopied: 'Phone number copied',
+      contactFormInstruction: 'Please fill in the information below. We will respond within 24 hours. For faster support, you can call directly or contact via Zalo.',
+      sending: 'Sending...',
       
       // Favourites
       addToFavourites: 'Add to Favourites',
@@ -291,16 +313,16 @@ const resources = {
       favourites: 'お気に入り',
       contact: 'お問い合わせ',
       guide: 'ガイド',
-      guides: 'ガイド', // 🔧 FIXED: Added plural form (same as singular in Japanese)
+      guides: 'ガイド',
       about: '会社概要',
       
-      // 🔧 FIXED: Guide-related translations
+      // Guide-related translations
       allGuides: 'すべてのガイド',
       back_to_guides: 'ガイドに戻る',
-      helpful_guides: '役立つガイド',
-      guides_description: 'ハノイでの住宅探しに役立つ情報をご覧ください',
+      helpful_guides: '便利なガイド',
+      guides_description: 'ハノイでのアパート賃貸に役立つ情報を見つける',
       content_not_found: 'コンテンツが見つかりません',
-      last_updated: '最終更新日',
+      last_updated: '最終更新',
       
       // Property
       apartment: 'アパート',
@@ -308,16 +330,16 @@ const resources = {
       studio: 'スタジオ',
       house: '一軒家',
       price: '価格',
-      priceRange: '価格帯',
+      priceRange: '価格範囲',
       area: '面積',
       address: '住所',
       amenities: '設備',
       bedrooms: '寝室',
       bathrooms: 'バスルーム',
       floor: '階',
-      available: '空室',
-      featured: '特集',
-      viewDescription: 'ビューの説明',
+      available: '空室あり',
+      featured: '注目',
+      viewDescription: '景色の説明',
       petPolicy: 'ペット規約',
       
       // Search & Filter
@@ -331,31 +353,42 @@ const resources = {
       maxArea: '最大面積',
       minBedrooms: '最少寝室数',
       maxBedrooms: '最大寝室数',
-      featuredOnly: '特集のみ',
-      applyFilter: 'フィルターを適用',
-      clearFilter: 'フィルターをクリア',
+      featuredOnly: '注目物件のみ',
+      applyFilter: 'フィルター適用',
+      clearFilter: 'フィルタークリア',
       
       // Contact
       contactUs: 'お問い合わせ',
       fullName: '氏名',
-      email: 'メールアドレス',
+      email: 'メール',
       phone: '電話番号',
       subject: '件名',
       message: 'メッセージ',
-      sendMessage: 'メッセージを送信',
-      contactInfo: '連絡先情報',
+      sendMessage: 'メッセージ送信',
+      contactInfo: '連絡先',
+      
+      // Contact Icons & Phone Dialog
+      sendEmailContact: 'メール連絡を送信',
+      phoneContact: '電話連絡',
+      phoneContactTitle: '電話連絡',
+      phoneContactDescription: '直接お電話いただくか、Zaloでお気軽にお問い合わせください。',
+      callNow: '今すぐ電話',
+      contactZalo: 'Zalo連絡',
+      phoneCopied: '電話番号をコピーしました',
+      contactFormInstruction: '以下の情報をご記入ください。24時間以内にご返信いたします。より迅速なサポートをご希望の場合は、直接お電話いただくかZaloでお問い合わせください。',
+      sending: '送信中...',
       
       // Favourites
       addToFavourites: 'お気に入りに追加',
       removeFromFavourites: 'お気に入りから削除',
-      noFavourites: 'お気に入りの物件がありません',
+      noFavourites: 'お気に入りの物件はまだありません',
       favouriteAdded: 'お気に入りに追加しました',
       favouriteRemoved: 'お気に入りから削除しました',
       
       // Property listing
       noPropertiesFound: '物件が見つかりません',
-      showingResults: '{{total}}件中{{from}} - {{to}}件を表示',
-      loadMore: 'もっと読み込む',
+      showingResults: '{{total}}件中{{from}}-{{to}}件を表示',
+      loadMore: 'さらに読み込む',
       
       // Currency & Units
       vnd: 'VND',

@@ -179,8 +179,7 @@ export const ContactDialog: React.FC<ContactDialogProps> = ({
         {/* Instruction Text */}
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            Vui lòng điền đầy đủ thông tin dưới đây. Chúng tôi sẽ phản hồi trong vòng 24 giờ. 
-            Để được hỗ trợ nhanh hơn, bạn có thể gọi trực tiếp hoặc liên hệ qua Zalo.
+            {t('contactFormInstruction')}
           </Typography>
         </Alert>
 
@@ -272,7 +271,7 @@ export const ContactDialog: React.FC<ContactDialogProps> = ({
           variant="contained"
           startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
         >
-          {loading ? 'Đang gửi...' : t('sendMessage')}
+          {loading ? t('sending') : t('sendMessage')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -18,7 +18,8 @@ import {
 import {
   Email as EmailIcon,
   Phone as PhoneIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Chat as ChatIcon
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { ContactDialog } from './ContactDialog'
@@ -65,14 +66,12 @@ export const FloatingContactIcons: React.FC = () => {
     setPhoneDialogOpen(false)
   }
 
-  const handleCopyPhone = async () => {
-    try {
-      await navigator.clipboard.writeText(companyPhone)
-      setCopySuccess(true)
-      setPhoneDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to copy phone number:', error)
-    }
+  // Thay thế handleCopyPhone bằng handleZaloLink
+  const handleZaloLink = () => {
+    // Tạo link Zalo - format: https://zalo.me/[số điện thoại]
+    const zaloUrl = `https://zalo.me/${companyPhone.replace(/\s/g, '')}`
+    window.open(zaloUrl, '_blank')
+    setPhoneDialogOpen(false)
   }
 
   return (
@@ -91,7 +90,7 @@ export const FloatingContactIcons: React.FC = () => {
         }}
       >
         {/* Email Icon */}
-        <Tooltip title="Gửi email liên hệ" placement="left">
+        <Tooltip title={t('sendEmailContact')} placement="left">
           <Fab
             color="primary"
             onClick={handleEmailClick}
@@ -111,7 +110,7 @@ export const FloatingContactIcons: React.FC = () => {
         </Tooltip>
 
         {/* Phone Icon */}
-        <Tooltip title="Liên hệ điện thoại" placement="left">
+        <Tooltip title={t('phoneContact')} placement="left">
           <Fab
             color="secondary"
             onClick={handlePhoneClick}
@@ -146,7 +145,7 @@ export const FloatingContactIcons: React.FC = () => {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Liên hệ điện thoại</Typography>
+            <Typography variant="h6">{t('phoneContactTitle')}</Typography>
             <IconButton
               onClick={() => setPhoneDialogOpen(false)}
               sx={{ minWidth: 'auto', p: 1 }}
@@ -165,7 +164,7 @@ export const FloatingContactIcons: React.FC = () => {
             </Typography>
             
             <Typography variant="body2" color="text.secondary" textAlign="center">
-              Bạn có thể gọi trực tiếp hoặc sao chép số điện thoại để liên hệ qua Zalo.
+              {t('phoneContactDescription')}
             </Typography>
           </Stack>
         </DialogContent>
@@ -178,20 +177,32 @@ export const FloatingContactIcons: React.FC = () => {
               startIcon={<PhoneIcon />}
               onClick={handlePhoneCall}
             >
-              Gọi ngay
+              {t('callNow')}
             </Button>
             
+            {/* Thay thế button Copy thành Link to Zalo */}
             <Button
               variant="outlined"
-              onClick={handleCopyPhone}
+              color="primary"
+              startIcon={<ChatIcon />}
+              onClick={handleZaloLink}
+              sx={{
+                borderColor: '#0068FF', // Màu xanh Zalo
+                color: '#0068FF',
+                '&:hover': {
+                  borderColor: '#0052CC',
+                  color: '#0052CC',
+                  backgroundColor: 'rgba(0, 104, 255, 0.04)'
+                }
+              }}
             >
-              Sao chép số
+              {t('contactZalo')}
             </Button>
           </Stack>
         </DialogActions>
       </Dialog>
 
-      {/* Copy Success Snackbar */}
+      {/* Copy Success Snackbar - Có thể xóa nếu không dùng nữa */}
       <Snackbar
         open={copySuccess}
         autoHideDuration={3000}
@@ -199,7 +210,7 @@ export const FloatingContactIcons: React.FC = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert onClose={() => setCopySuccess(false)} severity="success">
-          Đã sao chép số điện thoại
+          {t('phoneCopied')}
         </Alert>
       </Snackbar>
     </>
