@@ -1,3 +1,4 @@
+// app-frontend/src/config/axios.ts - SIMPLE FIX
 import axios from 'axios'
 import type { InternalAxiosRequestConfig, AxiosInstance, AxiosResponse } from 'axios'
 import { API_BASE_URL, ADMIN_API_BASE_URL, STORAGE_KEYS, DEBUG } from './constants'
@@ -41,6 +42,20 @@ adminApi.interceptors.request.use(
   }
 )
 
+// Simple logout function
+const performLogout = () => {
+  // Clear tokens
+  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+  localStorage.removeItem(STORAGE_KEYS.USER)
+  
+  // Redirect to login if on admin pages
+  if (window.location.pathname.startsWith('/admin') && 
+      !window.location.pathname.includes('/login')) {
+    window.location.href = '/admin/login?reason=expired'
+  }
+}
+
 // Response interceptor for admin API (handle auth errors & token refresh)
 adminApi.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -69,15 +84,14 @@ adminApi.interceptors.response.use(
           return adminApi(original)
         }
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
-        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
-        localStorage.removeItem(STORAGE_KEYS.USER)
-        
-        if (window.location.pathname.startsWith('/admin')) {
-          window.location.href = '/admin/login'
-        }
+        // Refresh failed, logout
+        console.log('Token refresh failed, logging out')
+        performLogout()
+        return Promise.reject(refreshError)
       }
+      
+      // No refresh token, logout
+      performLogout()
     }
 
     if (DEBUG) {

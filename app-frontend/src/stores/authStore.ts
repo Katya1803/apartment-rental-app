@@ -1,3 +1,4 @@
+// app-frontend/src/stores/authStore.ts - SIMPLE FIX
 import { create } from 'zustand'
 import { AuthService } from '../services/authService'
 import { STORAGE_KEYS } from '../config/constants'
@@ -14,6 +15,17 @@ interface AuthState {
   logout: () => void
   clearError: () => void
   checkAuth: () => void
+}
+
+// Helper function to check if token is expired
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const currentTime = Math.floor(Date.now() / 1000)
+    return payload.exp < currentTime
+  } catch {
+    return true
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -75,6 +87,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userStr = localStorage.getItem(STORAGE_KEYS.USER)
     
     if (token && userStr) {
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        // Token expired, clear everything and logout
+        get().logout()
+        return
+      }
+
       try {
         const user = JSON.parse(userStr) as UserSummary
         set({ user, isAuthenticated: true })
@@ -85,3 +104,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   }
 }))
+
+// Optional: Check token expiry every 5 minutes
+setInterval(() => {
+  const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+  if (token && isTokenExpired(token)) {
+    console.log('Token expired, auto logout')
+    useAuthStore.getState().logout()
+  }
+}, 5 * 60 * 1000) // 5 minutes
