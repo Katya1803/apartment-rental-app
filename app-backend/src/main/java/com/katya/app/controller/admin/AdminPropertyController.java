@@ -16,6 +16,7 @@ import com.katya.app.util.ResponseBuilder;
 import com.katya.app.util.constant.ApiEndpoints;
 import com.katya.app.util.constant.AppConstants;
 import jakarta.validation.Valid;
+import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.katya.app.dto.request.PropertyDuplicateRequest;
+import com.katya.app.dto.request.PropertyBatchDuplicateRequest;
+import java.util.ArrayList;
 
 import java.util.List;
 
@@ -128,5 +132,60 @@ public class AdminPropertyController {
 
         boolean available = propertyService.isSlugAvailable(slug, excludeId);
         return ResponseBuilder.success(available);
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'EDITOR')")
+    public ResponseEntity<ApiResponse<PropertyDetailResponse>> duplicateProperty(
+            @PathVariable Long id,
+            @Valid @RequestBody PropertyDuplicateRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        PropertyDetailResponse duplicatedProperty = propertyService.duplicateProperty(
+                id,
+                request.getNewCode(),
+                userPrincipal.getId()
+        );
+
+        return ResponseBuilder.created(duplicatedProperty, "Property duplicated successfully");
+    }
+
+    @PostMapping("/{id}/duplicate-batch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'EDITOR')")
+    public ResponseEntity<ApiResponse<List<PropertyDetailResponse>>> duplicatePropertyBatch(
+            @PathVariable Long id,
+            @Valid @RequestBody PropertyBatchDuplicateRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        List<String> newCodes = generateCodesFromRequest(request);
+
+        List<PropertyDetailResponse> duplicatedProperties = propertyService.duplicatePropertyBatch(
+                id,
+                newCodes,
+                userPrincipal.getId()
+        );
+
+        return ResponseBuilder.created(duplicatedProperties,
+                String.format("Created %d properties successfully", duplicatedProperties.size()));
+    }
+
+    private List<String> generateCodesFromRequest(PropertyBatchDuplicateRequest request) {
+        if (request.getNewCodes() != null && !request.getNewCodes().isEmpty()) {
+            return request.getNewCodes();
+        }
+
+        if (request.getCodePrefix() != null &&
+                request.getStartNumber() != null &&
+                request.getEndNumber() != null) {
+
+            List<String> generatedCodes = new ArrayList<>();
+            for (int i = request.getStartNumber(); i <= request.getEndNumber(); i++) {
+                String code = request.getCodePrefix() + String.format("%02d", i);
+                generatedCodes.add(code);
+            }
+            return generatedCodes;
+        }
+
+        throw new ValidationException("Either provide newCodes list or codePrefix with start/end numbers");
     }
 }

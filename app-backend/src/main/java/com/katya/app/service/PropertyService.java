@@ -33,6 +33,11 @@ public interface PropertyService {
 
     void deleteProperty(Long id);
 
+    // NEW: Duplicate methods
+    PropertyDetailResponse duplicateProperty(Long sourceId, String newCode, Long userId);
+
+    List<PropertyDetailResponse> duplicatePropertyBatch(Long sourceId, List<String> newCodes, Long userId);
+
     // Utility
     boolean isSlugAvailable(String slug, Long excludeId);
 }

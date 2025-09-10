@@ -211,4 +211,40 @@ export class PropertyService {
     
     return response.data.data
   }
+
+  static async duplicateProperty(id: number, newCode: string): Promise<PropertyDetail> {
+  const response = await adminApi.post<ApiResponse<PropertyDetail>>(
+    `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}/duplicate`,
+    { newCode }
+  )
+  
+  return response.data.data
+  }
+
+  // NEW: Batch duplicate property
+  static async duplicatePropertyBatch(id: number, request: any): Promise<PropertyDetail[]> {
+    try {
+      console.log('=== BATCH DUPLICATE DEBUG ===')
+      console.log('Property ID:', id)
+      console.log('Request payload:', JSON.stringify(request, null, 2))
+      console.log('API endpoint:', `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}/duplicate-batch`)
+      
+      const response = await adminApi.post<ApiResponse<PropertyDetail[]>>(
+        `${API_ENDPOINTS.ADMIN.PROPERTIES}/${id}/duplicate-batch`,
+        request
+      )
+      
+      console.log('Success response:', response.data)
+      return response.data.data
+      
+    } catch (error: any) {
+      console.error('=== BATCH DUPLICATE ERROR ===')
+      console.error('Error object:', error)
+      console.error('Error status:', error.response?.status)
+      console.error('Error data:', error.response?.data)
+      console.error('Error headers:', error.response?.headers)
+      
+      throw error
+    }
+  }
 }

@@ -27,9 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,6 +41,7 @@ public class PropertyServiceImpl implements PropertyService {
     private final AmenityRepository amenityRepository;
     private final AppUserRepository userRepository;
     private final PropertyMapper propertyMapper;
+    private final PropertyImageRepository propertyImageRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -337,5 +336,189 @@ public class PropertyServiceImpl implements PropertyService {
                 request.getMinArea() == null && request.getMaxArea() == null &&
                 request.getMinBedrooms() == null && request.getMaxBedrooms() == null &&
                 request.getIsFeatured() == null;
+    }
+
+    @Override
+    @Transactional
+    public PropertyDetailResponse duplicateProperty(Long sourceId, String newCode, Long userId) {
+        log.info("Duplicating property ID: {} with new code: {}", sourceId, newCode);
+
+        Property sourceProperty = propertyRepository.findById(sourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property", "id", sourceId));
+
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        String newSlug = generateUniqueSlug(newCode);
+        log.info("Generated slug: {} for code: {}", newSlug, newCode);
+
+        Property duplicatedProperty = createDuplicateProperty(sourceProperty, newCode, newSlug, user);
+        duplicatedProperty = propertyRepository.save(duplicatedProperty);
+
+        copyPropertyData(sourceProperty, duplicatedProperty);
+        copyPropertyImages(sourceProperty, duplicatedProperty); // NEW: Copy images
+
+        log.info("Property duplicated successfully. New ID: {}, Slug: {}",
+                duplicatedProperty.getId(), duplicatedProperty.getSlug());
+        return propertyMapper.toDetailResponse(duplicatedProperty, Locale.VI);
+    }
+
+
+    @Override
+    @Transactional
+    public List<PropertyDetailResponse> duplicatePropertyBatch(Long sourceId, List<String> newCodes, Long userId) {
+        log.info("Batch duplicating property ID: {} with {} new codes", sourceId, newCodes.size());
+
+        if (newCodes == null || newCodes.isEmpty()) {
+            throw new ValidationException("New codes list cannot be empty");
+        }
+
+        if (newCodes.size() > 50) {
+            throw new ValidationException("Cannot duplicate more than 50 properties at once");
+        }
+
+        Property sourceProperty = propertyRepository.findById(sourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property", "id", sourceId));
+
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        validateBatchCodes(newCodes);
+
+        List<PropertyDetailResponse> results = new ArrayList<>();
+
+        for (String newCode : newCodes) {
+            try {
+                String newSlug = generateUniqueSlug(newCode);
+
+                Property duplicatedProperty = createDuplicateProperty(sourceProperty, newCode, newSlug, user);
+                duplicatedProperty = propertyRepository.save(duplicatedProperty);
+
+                copyPropertyData(sourceProperty, duplicatedProperty);
+                copyPropertyImages(sourceProperty, duplicatedProperty); // NEW: Copy images for batch too
+
+                results.add(propertyMapper.toDetailResponse(duplicatedProperty, Locale.VI));
+
+                log.info("Created duplicate property: ID={}, Code={}", duplicatedProperty.getId(), newCode);
+
+            } catch (Exception e) {
+                log.error("Failed to duplicate property with code: {}", newCode, e);
+            }
+        }
+
+        log.info("Batch duplicate completed. Created {}/{} properties", results.size(), newCodes.size());
+        return results;
+    }
+
+    private void copyPropertyImages(Property source, Property target) {
+        for (PropertyImage sourceImage : source.getImages()) {
+            try {
+                // Create new PropertyImage entity (without copying actual file)
+                PropertyImage newImage = PropertyImage.builder()
+                        .property(target)
+                        .filePath(sourceImage.getFilePath()) // Same Cloudinary URL
+                        .mimeType(sourceImage.getMimeType())
+                        .fileSize(sourceImage.getFileSize())
+                        .sortOrder(sourceImage.getSortOrder())
+                        .isCover(sourceImage.getIsCover())
+                        .build();
+
+                propertyImageRepository.save(newImage);
+
+                log.info("Copied image {} to property {}", sourceImage.getId(), target.getId());
+
+            } catch (Exception e) {
+                log.warn("Failed to copy image {} for property {}: {}",
+                        sourceImage.getId(), target.getId(), e.getMessage());
+            }
+        }
+    }
+
+
+    private String generateUniqueSlug(String code) {
+        String baseSlug = DtoUtils.sanitizeSlug(code.toLowerCase());
+
+        if (!propertyRepository.existsBySlug(baseSlug)) {
+            return baseSlug;
+        }
+
+        int counter = 1;
+        String uniqueSlug;
+        do {
+            uniqueSlug = baseSlug + "-" + counter;
+            counter++;
+        } while (propertyRepository.existsBySlug(uniqueSlug));
+
+        log.info("Generated unique slug: {} from base: {}", uniqueSlug, baseSlug);
+        return uniqueSlug;
+    }
+
+    private void validateBatchCodes(List<String> codes) {
+        Set<String> uniqueCodes = new HashSet<>(codes);
+        if (uniqueCodes.size() != codes.size()) {
+            throw new ValidationException("Duplicate codes found in the request");
+        }
+
+        for (String code : codes) {
+            if (code == null || code.trim().isEmpty()) {
+                throw new ValidationException("Code cannot be empty");
+            }
+            if (code.length() > 50) {
+                throw new ValidationException("Code too long: " + code);
+            }
+        }
+    }
+
+    private Property createDuplicateProperty(Property sourceProperty, String newCode, String newSlug, AppUser user) {
+        return Property.builder()
+                .slug(newSlug)
+                .code(newCode)
+                .propertyType(sourceProperty.getPropertyType())
+                .priceMonth(sourceProperty.getPriceMonth())
+                .areaSqm(sourceProperty.getAreaSqm())
+                .bedrooms(sourceProperty.getBedrooms())
+                .bathrooms(sourceProperty.getBathrooms())
+                .floorNo(sourceProperty.getFloorNo())
+                .petPolicy(sourceProperty.getPetPolicy())
+                .viewDesc(sourceProperty.getViewDesc())
+                .latitude(sourceProperty.getLatitude())
+                .longitude(sourceProperty.getLongitude())
+                .addressLine(sourceProperty.getAddressLine())
+                .status(PropertyStatus.DRAFT)
+                .isFeatured(false)
+                .createdBy(user)
+                .updatedBy(user)
+                .build();
+    }
+
+    private void copyPropertyData(Property source, Property target) {
+        copyPropertyTranslations(source, target);
+        copyPropertyAmenities(source, target);
+    }
+
+    private void copyPropertyTranslations(Property source, Property target) {
+        for (PropertyI18n sourceTranslation : source.getTranslations()) {
+            PropertyI18n newTranslation = PropertyI18n.builder()
+                    .id(new PropertyI18nId(target.getId(), sourceTranslation.getId().getLocale()))
+                    .property(target)
+                    .title(sourceTranslation.getTitle() + " - Copy")
+                    .descriptionMd(sourceTranslation.getDescriptionMd())
+                    .addressText(sourceTranslation.getAddressText())
+                    .build();
+
+            propertyI18nRepository.save(newTranslation);
+        }
+    }
+
+    private void copyPropertyAmenities(Property source, Property target) {
+        for (PropertyAmenity sourceAmenity : source.getAmenities()) {
+            PropertyAmenity newAmenity = PropertyAmenity.builder()
+                    .id(new PropertyAmenityId(target.getId(), sourceAmenity.getId().getAmenityId()))
+                    .property(target)
+                    .amenity(sourceAmenity.getAmenity())
+                    .build();
+
+            propertyAmenityRepository.save(newAmenity);
+        }
     }
 }
