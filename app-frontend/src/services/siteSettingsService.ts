@@ -40,6 +40,22 @@ class SiteSettingsService {
     )
     return response.data.data
   }
+
+  async uploadHeroImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  const response = await adminApi.post<ApiResponse<string>>(
+    `${API_ENDPOINTS.ADMIN.SITE_SETTINGS}/hero-image`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+  )
+  return response.data.data
+}
 }
 
 export const siteSettingsService = new SiteSettingsService()

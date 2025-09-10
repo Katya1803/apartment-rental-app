@@ -33,17 +33,9 @@ const AdminRoutes: React.FC = () => {
     <AdminLayout>
       <React.Suspense fallback={<div>Loading...</div>}>
         <Routes>
-          <Route path="/" element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />
+          <Route path="/" element={<Navigate to={ROUTES.ADMIN. PROPERTIES} replace />} />
           
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
+
           <Route 
             path="/properties" 
             element={

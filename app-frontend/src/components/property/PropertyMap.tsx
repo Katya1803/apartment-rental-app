@@ -1,4 +1,3 @@
-// app-frontend/src/components/property/PropertyMap.tsx
 import React, { useEffect, useRef, useState } from 'react'
 import { Box, Alert, Skeleton, Typography, Paper, Button } from '@mui/material'
 import { LocationOn as LocationIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material'
@@ -11,7 +10,6 @@ interface PropertyMapProps {
   height?: number
 }
 
-// Global singletons to avoid duplicate loads (đồng bộ với GoogleMapPicker)
 let isGoogleMapsLoaded = false
 let isGoogleMapsLoading = false
 let googleMapsPromise: Promise<void> | null = null
@@ -34,7 +32,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     if (isGoogleMapsLoaded && (window as any).google?.maps) return
     if (isGoogleMapsLoading && googleMapsPromise) return googleMapsPromise
 
-    // If a script element with our id already exists, wait until google.maps is available
     const existing = document.getElementById(SCRIPT_ID)
     if (existing) {
       await new Promise<void>((resolve) => {
@@ -75,7 +72,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         check()
       }
       script.onerror = () => {
-        console.error('Failed to load Google Maps script') // Debug log
+        console.error('Failed to load Google Maps script') 
         isGoogleMapsLoading = false
         reject(new Error('Failed to load Google Maps'))
       }
@@ -91,7 +88,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
     try {
       console.log('Initializing PropertyMap with coordinates:', latitude, longitude) // Debug log
       
-      // Create map
       const map = new google.maps.Map(mapRef.current, {
         center: { lat: latitude, lng: longitude },
         zoom: 16,
@@ -99,7 +95,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         streetViewControl: false,
         fullscreenControl: true,
         zoomControl: true,
-        gestureHandling: 'cooperative', // Better for mobile
+        gestureHandling: 'cooperative', 
         styles: [
           {
             featureType: 'poi',
@@ -109,7 +105,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         ]
       })
 
-      // Create marker với custom icon
       const marker = new google.maps.Marker({
         position: { lat: latitude, lng: longitude },
         map: map,

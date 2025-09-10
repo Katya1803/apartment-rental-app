@@ -1,4 +1,4 @@
-// src/pages/public/HomePage.tsx - VIẾT LẠI CLEAN
+// app-frontend/src/pages/public/HomePage.tsx
 import React, { useState, useEffect } from 'react'
 import {
   Box,
@@ -8,12 +8,12 @@ import {
   Card,
   CardContent,
   CardMedia,
-  Button,
   IconButton,
   Chip,
   Stack,
   Skeleton,
-  Alert
+  Alert,
+  Pagination
 } from '@mui/material'
 import {
   Favorite as FavoriteIcon,
@@ -21,32 +21,39 @@ import {
   LocationOn as LocationIcon,
   AspectRatio as AreaIcon,
   Bed as BedIcon,
-  Shower as BathIcon
+  Shower as BathIcon,
+  Star as FeaturedIcon
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { PropertyService } from '../../services/propertyService'
+import { CompanyService } from '../../services/companyService'
 import { FavoritesService } from '../../services/favoritesService'
-import { ROUTES } from '../../config/constants'
 import type { PropertySummary, Locale } from '../../types'
-import PublicLayout from '../layout/PublicLayout'
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   
-  // Simple state
+  // States
   const [properties, setProperties] = useState<PropertySummary[]>([])
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [favorites, setFavorites] = useState<number[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProperties, setTotalProperties] = useState(0)
 
-  // Load properties
+  // Effects
   useEffect(() => {
     loadProperties()
+  }, [i18n.language, currentPage])
+
+  useEffect(() => {
+    loadHeroImage()
   }, [i18n.language])
 
-  // Load favorites
   useEffect(() => {
     loadFavorites()
     const handleStorageChange = () => loadFavorites()
@@ -54,16 +61,18 @@ const HomePage: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
+  // Functions
   const loadProperties = async () => {
     try {
       setLoading(true)
       setError(null)
       
       const locale = i18n.language as Locale
+      const response = await PropertyService.getPublishedProperties(undefined, locale, currentPage - 1, 9)
       
-      // Load all published properties (limit 12 for homepage)
-      const response = await PropertyService.getPublishedProperties(undefined, locale, 0, 12)
       setProperties(response.items || [])
+      setTotalPages(response.totalPages || Math.ceil((response.totalPages || 0) / 9) || 1)
+      setTotalProperties(response.totalElements || 0)
       
     } catch (err) {
       console.error('Failed to load properties:', err)
@@ -71,6 +80,15 @@ const HomePage: React.FC = () => {
       setProperties([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadHeroImage = async () => {
+    try {
+      const companyInfo = await CompanyService.getCompanyInfo(i18n.language as Locale)
+      setHeroImageUrl(companyInfo.hero_image_url || '')
+    } catch (err) {
+      console.error('Failed to load hero image:', err)
     }
   }
 
@@ -88,22 +106,17 @@ const HomePage: React.FC = () => {
     navigate(`/properties/${slug}`)
   }
 
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(price)
-  }
-
-  const getPropertyTypeLabel = (type: string) => {
-    const labels = {
-      APARTMENT: 'Apartment',
-      ROOM: 'Room', 
-      STUDIO: 'Studio',
-      HOUSE: 'House'
-    }
-    return labels[type as keyof typeof labels] || type
   }
 
   const getPropertyTypeIcon = (type: string) => {
@@ -119,7 +132,7 @@ const HomePage: React.FC = () => {
   // Loading skeleton
   const LoadingSkeleton = () => (
     <Grid container spacing={3}>
-      {Array.from({ length: 6 }).map((_, index) => (
+      {Array.from({ length: 9 }).map((_, index) => (
         <Grid item xs={12} sm={6} md={4} key={index}>
           <Card>
             <Skeleton variant="rectangular" height={240} />
@@ -175,26 +188,25 @@ const HomePage: React.FC = () => {
             </Box>
           )}
 
-          {/* Property type badge */}
-          <Chip
-            label={getPropertyTypeLabel(property.propertyType)}
-            size="small"
-            sx={{ 
-              position: 'absolute', 
-              top: 8, 
-              left: 8,
-              bgcolor: 'rgba(255,255,255,0.9)'
-            }}
-          />
-
-          {/* Featured badge */}
+          {/* Featured icon */}
           {property.isFeatured && (
-            <Chip
-              label="Featured"
-              color="primary"
-              size="small"
-              sx={{ position: 'absolute', top: 8, right: 48 }}
-            />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                backgroundColor: 'warning.main',
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 1
+              }}
+            >
+              <FeaturedIcon sx={{ color: 'white', fontSize: 18 }} />
+            </Box>
           )}
 
           {/* Favorite button */}
@@ -216,6 +228,8 @@ const HomePage: React.FC = () => {
         </Box>
 
         <CardContent>
+
+
           {/* Title */}
           <Typography variant="h6" gutterBottom noWrap>
             {property.title || `Property ${property.id}`}
@@ -236,6 +250,13 @@ const HomePage: React.FC = () => {
               }}
             >
               {property.shortDescription}
+            </Typography>
+          )}
+
+          {/* Property Code */}
+          {property.code && (
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              #{property.code}
             </Typography>
           )}
 
@@ -287,19 +308,29 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <PublicLayout>
-      <Box>
-        {/* Hero Section */}
-        <Box
-          sx={{
+    <Box>
+      {/* Hero Section */}
+      <Box
+        sx={{
+          minHeight: '60vh',
+          position: 'relative',
+          ...(heroImageUrl ? {
+            backgroundImage: `url(${heroImageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          } : {
             bgcolor: 'primary.main',
-            color: 'white',
-            py: 8,
-            backgroundImage: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
-          }}
-        >
+            backgroundImage: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            display: 'flex',
+            alignItems: 'center'
+          })
+        }}
+      >
+        {/* Show text only when no hero image */}
+        {!heroImageUrl && (
           <Container maxWidth="lg">
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{ textAlign: 'center', color: 'white' }}>
               <Typography variant="h2" component="h1" gutterBottom fontWeight="bold">
                 Find Your Perfect Home
               </Typography>
@@ -311,57 +342,66 @@ const HomePage: React.FC = () => {
               </Typography>
             </Box>
           </Container>
-        </Box>
-
-        {/* Properties Section */}
-        <Container maxWidth="lg" sx={{ py: 6 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 4 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Typography variant="h4" component="h2" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
-            Available Properties
-          </Typography>
-
-          {loading ? (
-            <LoadingSkeleton />
-          ) : properties.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No properties available
-              </Typography>
-              <Typography color="text.secondary">
-                Please check back later or contact us for more information.
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              <Grid container spacing={3}>
-                {properties.map((property) => (
-                  <Grid item xs={12} sm={6} md={4} key={property.id}>
-                    <PropertyCard property={property} />
-                  </Grid>
-                ))}
-              </Grid>
-
-              {/* View All Button */}
-              <Box sx={{ textAlign: 'center', mt: 6 }}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => navigate(ROUTES.PROPERTIES)}
-                  sx={{ px: 4, py: 1.5 }}
-                >
-                  View All Properties
-                </Button>
-              </Box>
-            </>
-          )}
-        </Container>
+        )}
       </Box>
-    </PublicLayout>
+
+      {/* Properties Section */}
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 4 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <LoadingSkeleton />
+        ) : properties.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No properties available
+            </Typography>
+            <Typography color="text.secondary">
+              Please check back later or contact us for more information.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Properties Grid */}
+            <Grid container spacing={3}>
+              {properties.map((property) => (
+                <Grid item xs={12} sm={6} md={4} key={property.id}>
+                  <PropertyCard property={property} />
+                </Grid>
+              ))}
+            </Grid>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                  count={totalPages}
+                  page={currentPage}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
+            )}
+
+            {/* Properties count info */}
+            {totalProperties > 0 && (
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Showing {(currentPage - 1) * 9 + 1}-{Math.min(currentPage * 9, totalProperties)} of {totalProperties} properties
+                </Typography>
+              </Box>
+            )}
+          </>
+        )}
+      </Container>
+    </Box>
   )
 }
 

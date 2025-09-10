@@ -211,14 +211,6 @@ const PropertyDetailPage: React.FC = () => {
               {translation?.title || property.slug}
             </Typography>
 
-            {/* Featured Badge */}
-            {property.isFeatured && (
-              <Chip
-                label={t('featured')}
-                color="secondary"
-                sx={{ mb: 2 }}
-              />
-            )}
             
             {/* Price */}
             <Typography variant="h4" color="primary" fontWeight="bold" sx={{ mb: 3 }}>

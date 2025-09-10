@@ -345,7 +345,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
           
           {/* Copyright - Always in English */}
           <Typography variant="body2" color="grey.400" align="center">
-            © 2024 {APP_NAME}. All rights reserved
+            © 2025 {APP_NAME}. All rights reserved
           </Typography>
         </Container>
       </Box>

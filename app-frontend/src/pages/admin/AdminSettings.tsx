@@ -1,4 +1,4 @@
-// app-frontend/src/pages/admin/AdminSettings.tsx - FINAL FIXED
+// app-frontend/src/pages/admin/AdminSettings.tsx
 import React, { useState, useEffect } from 'react'
 import {
   Box,
@@ -19,10 +19,12 @@ import {
 import {
   Settings as SettingsIcon,
   Save as SaveIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  CloudUpload as UploadIcon,
+  Delete as DeleteIcon,
+  Image as ImageIcon
 } from '@mui/icons-material'
 import { siteSettingsService } from '../../services/siteSettingsService'
-import type { SiteSettingUpdateRequest } from '../../services/siteSettingsService'
 import type { SiteSettingResponse, Locale } from '../../types'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -38,6 +40,11 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   </div>
 )
 
+interface SiteSettingUpdateRequest {
+  value?: string
+  translations?: Record<string, string>
+}
+
 const AdminSettings: React.FC = () => {
   const { user } = useAuthStore()
   const [tabValue, setTabValue] = useState(0)
@@ -48,6 +55,10 @@ const AdminSettings: React.FC = () => {
 
   // Form states for each setting
   const [formData, setFormData] = useState<Record<string, Record<Locale, string>>>({})
+  
+  // Hero image states
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('')
+  const [heroUploading, setHeroUploading] = useState(false)
 
   const locales: Locale[] = ['vi', 'en', 'ja']
   const localeLabels = {
@@ -74,21 +85,24 @@ const AdminSettings: React.FC = () => {
       setLoading(true)
       const data = await siteSettingsService.getAllSettings()
       
-      console.log('Settings response:', data) // Debug log
       setSettings(data)
       
-      // FIXED: Map backend response correctly to form state
+      // Map backend response to form state
       const formState: Record<string, Record<Locale, string>> = {}
       data.forEach(setting => {
+        // Ensure each setting has all locales
         formState[setting.key] = {
-          vi: setting.translations.vi || setting.value || '',
-          en: setting.translations.en || setting.value || '',
-          ja: setting.translations.ja || setting.value || ''
+          vi: setting.translations?.vi || setting.value || '',
+          en: setting.translations?.en || setting.value || '',
+          ja: setting.translations?.ja || setting.value || ''
         }
-        console.log(`Mapped ${setting.key}:`, formState[setting.key]) // Debug log
+        
+        // Load hero image URL if exists
+        if (setting.key === 'hero_image_url') {
+          setHeroImageUrl(setting.value || '')
+        }
       })
       
-      console.log('Final form state:', formState) // Debug log
       setFormData(formState)
     } catch (error) {
       console.error('Failed to load settings:', error)
@@ -111,13 +125,10 @@ const AdminSettings: React.FC = () => {
   const handleSave = async (key: string) => {
     try {
       setSaving(key)
-      const updateData: SiteSettingUpdateRequest = {
-        translations: formData[key] || {}
-      }
+      const translations = formData[key] || { vi: '', en: '', ja: '' }
+
       
-      console.log(`Saving ${key}:`, updateData) // Debug log
-      
-      await siteSettingsService.updateSetting(key, updateData)
+      await siteSettingsService.updateSetting(key, { translations })
       setMessage({ type: 'success', text: `${key} updated successfully` })
       
       // Refresh data after save
@@ -140,6 +151,40 @@ const AdminSettings: React.FC = () => {
       await loadSettings()
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to initialize default settings' })
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  // Hero image handlers
+  const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setHeroUploading(true)
+    try {
+      const imageUrl = await siteSettingsService.uploadHeroImage(file)
+      setHeroImageUrl(imageUrl)
+      setMessage({ type: 'success', text: 'Hero image uploaded successfully' })
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setMessage({ type: 'error', text: 'Failed to upload hero image' })
+    } finally {
+      setHeroUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  const handleHeroImageRemove = async () => {
+    try {
+      setSaving('hero_image_url')
+      await siteSettingsService.updateSetting('hero_image_url', {
+        translations: { vi: '', en: '', ja: '' }
+      })
+      setHeroImageUrl('')
+      setMessage({ type: 'success', text: 'Hero image removed successfully' })
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to remove hero image' })
     } finally {
       setSaving(null)
     }
@@ -215,6 +260,7 @@ const AdminSettings: React.FC = () => {
       <Paper sx={{ mb: 3 }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
           <Tab label="Company Information" />
+          <Tab label="Hero Section" />
           <Tab label="All Settings" />
         </Tabs>
       </Paper>
@@ -235,6 +281,74 @@ const AdminSettings: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ImageIcon />
+                Hero Background Image
+              </Typography>
+
+              {/* Current Image Preview */}
+              {heroImageUrl && (
+                <Box sx={{ 
+                  mb: 2, 
+                  height: 200, 
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${heroImageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white'
+                }}>
+                </Box>
+              )}
+
+              {/* Upload Button */}
+              <Button
+                variant="contained"
+                component="label"
+                startIcon={<UploadIcon />}
+                disabled={heroUploading}
+                sx={{ mr: 2 }}
+              >
+                {heroUploading ? 'Uploading...' : (heroImageUrl ? 'Change Image' : 'Upload Image')}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleHeroImageUpload}
+                />
+              </Button>
+
+              {/* Remove Button */}
+              {heroImageUrl && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleHeroImageRemove}
+                  disabled={saving === 'hero_image_url'}
+                >
+                  Remove
+                </Button>
+              )}
+
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                💡 Recommended size: 1920x1080px. Image will be used as background for homepage hero section.
+              </Typography>
+            </CardContent>
+          </Card>
+        )}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
