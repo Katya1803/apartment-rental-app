@@ -291,7 +291,7 @@ const AdminProperties: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => navigate('/admin/properties/create')}
+          onClick={() => navigate('/admin/properties/new')}
         >
           Add Property
         </Button>
@@ -377,7 +377,7 @@ const AdminProperties: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => navigate('/admin/properties/create')}
+              onClick={() => navigate('/admin/properties/new')}
             >
               Add Property
             </Button>

@@ -151,152 +151,137 @@ const HomePage: React.FC = () => {
     </Grid>
   )
 
-  // Property card component
-  const PropertyCard = ({ property }: { property: PropertySummary }) => {
-    const isFavorite = favorites.includes(property.id)
+// Property card component
+const PropertyCard = ({ property }: { property: PropertySummary }) => {
+  const isFavorite = favorites.includes(property.id)
 
-    return (
-      <Card 
-        sx={{ 
-          height: '100%',
-          cursor: 'pointer',
-          transition: 'transform 0.2s',
-          '&:hover': { transform: 'translateY(-2px)' }
-        }}
-        onClick={() => handlePropertyClick(property.slug)}
-      >
-        {/* Image */}
-        <Box sx={{ position: 'relative', height: 240 }}>
-          {property.coverImageUrl ? (
-            <CardMedia
-              component="img"
-              height="240"
-              image={property.coverImageUrl}
-              alt={property.title || 'Property'}
-              sx={{ objectFit: 'cover' }}
-            />
-          ) : (
-            <Box sx={{
-              height: 240,
-              bgcolor: 'grey.200',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '3rem'
-            }}>
-              {getPropertyTypeIcon(property.propertyType)}
-            </Box>
-          )}
+  return (
+    <Card 
+      sx={{ 
+        height: '100%',
+        cursor: 'pointer',
+        transition: 'transform 0.2s',
+        '&:hover': { transform: 'translateY(-2px)' }
+      }}
+      onClick={() => handlePropertyClick(property.slug)}
+    >
+      {/* Image */}
+      <Box sx={{ position: 'relative', height: 240 }}>
+        {property.coverImageUrl ? (
+          <CardMedia
+            component="img"
+            height="240"
+            image={property.coverImageUrl}
+            alt={property.title || 'Property'}
+            sx={{ objectFit: 'cover' }}
+          />
+        ) : (
+          <Box sx={{
+            height: 240,
+            bgcolor: 'grey.200',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '3rem'
+          }}>
+            {getPropertyTypeIcon(property.propertyType)}
+          </Box>
+        )}
 
-          {/* Featured icon */}
-          {property.isFeatured && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 8,
-                backgroundColor: 'warning.main',
-                borderRadius: '50%',
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 1
-              }}
-            >
-              <FeaturedIcon sx={{ color: 'white', fontSize: 18 }} />
-            </Box>
-          )}
-
-          {/* Favorite button */}
-          <IconButton
-            onClick={(e) => handleFavoriteToggle(property.id, e)}
+        {/* Featured icon */}
+        {property.isFeatured && (
+          <Box
             sx={{
               position: 'absolute',
               top: 8,
-              right: 8,
-              bgcolor: 'rgba(255,255,255,0.8)'
+              left: 8,
+              backgroundColor: 'warning.main',
+              borderRadius: '50%',
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 1
             }}
           >
-            {isFavorite ? (
-              <FavoriteIcon color="error" />
-            ) : (
-              <FavoriteBorderIcon />
-            )}
-          </IconButton>
-        </Box>
+            <FeaturedIcon sx={{ color: 'white', fontSize: 18 }} />
+          </Box>
+        )}
 
-        <CardContent>
-          {/* Title */}
-          <Typography variant="h6" gutterBottom noWrap>
-            {property.title || `Property ${property.id}`}
-          </Typography>
+        {/* Favorite button */}
+        <IconButton
+          onClick={(e) => handleFavoriteToggle(property.id, e)}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            bgcolor: 'rgba(255,255,255,0.8)'
+          }}
+        >
+          {isFavorite ? (
+            <FavoriteIcon color="error" />
+          ) : (
+            <FavoriteBorderIcon />
+          )}
+        </IconButton>
+      </Box>
 
-          {/* Description */}
-          {property.shortDescription && (
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              sx={{ 
-                mb: 2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical'
-              }}
-            >
-              {property.shortDescription}
+      <CardContent>
+        {/* Title (hiện đầy đủ, không cắt) */}
+        <Typography variant="h6" gutterBottom>
+          {property.title || `Property ${property.id}`}
+        </Typography>
+
+        {/* ❌ Bỏ shortDescription */}
+
+        {/* Property details */}
+        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+          {property.areaSqm && (
+            <Chip
+              icon={<AreaIcon />}
+              label={`${property.areaSqm}m²`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+          {property.bedrooms && property.bedrooms > 0 && (
+            <Chip
+              icon={<BedIcon />}
+              label={`${property.bedrooms} bed`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+          {property.bathrooms && property.bathrooms > 0 && (
+            <Chip
+              icon={<BathIcon />}
+              label={`${property.bathrooms} bath`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+        </Stack>
+
+        {/* Price */}
+        <Typography variant="h6" color="primary" fontWeight="bold" gutterBottom>
+          {formatPrice(property.priceMonth)}/month
+        </Typography>
+
+        {/* Address */}
+        {property.addressText && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <LocationIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {property.addressText}
             </Typography>
-          )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
-          {/* Property details */}
-          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
-            {property.areaSqm && (
-              <Chip
-                icon={<AreaIcon />}
-                label={`${property.areaSqm}m²`}
-                size="small"
-                variant="outlined"
-              />
-            )}
-            {property.bedrooms && property.bedrooms > 0 && (
-              <Chip
-                icon={<BedIcon />}
-                label={`${property.bedrooms} bed`}
-                size="small"
-                variant="outlined"
-              />
-            )}
-            {property.bathrooms && property.bathrooms > 0 && (
-              <Chip
-                icon={<BathIcon />}
-                label={`${property.bathrooms} bath`}
-                size="small"
-                variant="outlined"
-              />
-            )}
-          </Stack>
-
-          {/* Price */}
-          <Typography variant="h6" color="primary" fontWeight="bold" gutterBottom>
-            {formatPrice(property.priceMonth)}/month
-          </Typography>
-
-          {/* Address */}
-          {property.addressText && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <LocationIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary" noWrap>
-                {property.addressText}
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Box>

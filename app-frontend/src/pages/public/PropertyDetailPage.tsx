@@ -1,4 +1,4 @@
-// app-frontend/src/pages/public/PropertyDetailPage.tsx - FIXED WITH FAVORITES
+// app-frontend/src/pages/public/PropertyDetailPage.tsx - FIXED WITH FAVORITES + AMENITIES GROUPS
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +13,6 @@ import {
   Paper,
   IconButton,
   Button,
-  Chip,
   Divider,
   Snackbar
 } from '@mui/material'
@@ -31,7 +30,6 @@ import { PropertyService } from '../../services/propertyService'
 import { FavoritesService } from '../../services/favoritesService'
 import PropertyImageGallery from '../../components/property/PropertyImageGallery'
 import PropertyAmenities from '../../components/property/PropertyAmenities'
-import PropertyMap from '../../components/property/PropertyMap'
 import LeafletMap from '../../components/property/LeafletMap'
 import { parseMarkdown } from '../../utils/markdown'
 import type { PropertyDetail, Locale } from '../../types'
@@ -45,7 +43,6 @@ const PropertyDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // 🔧 NEW: Favorites state
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteMessage, setFavoriteMessage] = useState('')
 
@@ -64,8 +61,6 @@ const PropertyDetailPage: React.FC = () => {
         setError(null)
         const data = await PropertyService.getPropertyBySlug(slug, currentLocale)
         setProperty(data)
-        
-        // 🔧 NEW: Check if property is in favorites
         setIsFavorite(FavoritesService.isFavorite(data.id))
       } catch (err) {
         console.error('Failed to fetch property:', err)
@@ -78,15 +73,11 @@ const PropertyDetailPage: React.FC = () => {
     fetchProperty()
   }, [slug, currentLocale])
 
-  // 🔧 NEW: Handle favorite toggle
   const handleFavoriteToggle = () => {
     if (!property) return
-
     FavoritesService.toggleFavorite(property.id)
     const newIsFavorite = FavoritesService.isFavorite(property.id)
     setIsFavorite(newIsFavorite)
-    
-    // Show feedback message
     setFavoriteMessage(
       newIsFavorite 
         ? t('favouriteAdded') 
@@ -135,7 +126,6 @@ const PropertyDetailPage: React.FC = () => {
     )
   }
 
-  // Get current translation
   const translation = property.translations[currentLocale] || 
                      property.translations['vi'] || 
                      Object.values(property.translations)[0]
@@ -182,7 +172,6 @@ const PropertyDetailPage: React.FC = () => {
         {/* Right - Property Info Card */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, height: 'fit-content', position: 'relative' }}>
-            {/* 🔧 FIXED: Favorite Button with functionality */}
             <IconButton 
               onClick={handleFavoriteToggle}
               color={isFavorite ? "error" : "default"}
@@ -201,18 +190,14 @@ const PropertyDetailPage: React.FC = () => {
               {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
             </IconButton>
 
-            {/* Property Code */}
             <Typography variant="h6" color="primary" fontWeight="bold" sx={{ mb: 1, pr: 6 }}>
               {property.code}
             </Typography>
             
-            {/* Property Title */}
             <Typography variant="h5" component="h1" fontWeight="bold" sx={{ mb: 2, pr: 6 }}>
               {translation?.title || property.slug}
             </Typography>
 
-            
-            {/* Price */}
             <Typography variant="h4" color="primary" fontWeight="bold" sx={{ mb: 3 }}>
               {formatPrice(property.priceMonth)}
               <Typography component="span" variant="body1" color="text.secondary">
@@ -222,7 +207,6 @@ const PropertyDetailPage: React.FC = () => {
 
             <Divider sx={{ mb: 3 }} />
 
-            {/* Property Details */}
             <Stack spacing={2} sx={{ mb: 3 }}>
               {property.areaSqm && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -272,7 +256,6 @@ const PropertyDetailPage: React.FC = () => {
 
             <Divider sx={{ mb: 3 }} />
 
-            {/* Updated Date */}
             {property.publishedAt && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
                 {t('last_updated')}: {new Date(property.publishedAt).toLocaleDateString(currentLocale)}
@@ -302,13 +285,27 @@ const PropertyDetailPage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Amenities */}
-      {property.amenities && property.amenities.length > 0 && (
+      {/* Included Services */}
+      {property.amenities?.some(a => a.key.startsWith('IS_')) && (
         <Paper sx={{ p: 3, mt: 3 }}>
           <Typography variant="h6" gutterBottom>
-            {t('amenities')}
+            {t('includedServices')}
           </Typography>
-          <PropertyAmenities amenities={property.amenities} />
+          <PropertyAmenities 
+            amenities={property.amenities.filter(a => a.key.startsWith('IS_'))} 
+          />
+        </Paper>
+      )}
+
+      {/* Interior Facilities */}
+      {property.amenities?.some(a => a.key.startsWith('IF_')) && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            {t('interiorFacilities')}
+          </Typography>
+          <PropertyAmenities 
+            amenities={property.amenities.filter(a => a.key.startsWith('IF_'))} 
+          />
         </Paper>
       )}
 
@@ -324,16 +321,16 @@ const PropertyDetailPage: React.FC = () => {
               {translation?.addressText || property.addressLine}
             </Typography>
           )}
-        <LeafletMap
-          latitude={property.latitude}
-          longitude={property.longitude}
-          title={translation?.title || property.slug}
-          address={translation?.addressText || property.addressLine}
-        />
+          <LeafletMap
+            latitude={property.latitude}
+            longitude={property.longitude}
+            title={translation?.title || property.slug}
+            address={translation?.addressText || property.addressLine}
+          />
         </Paper>
       )}
 
-      {/* Address without map (when no coordinates) */}
+      {/* Address without map */}
       {(!property.latitude || !property.longitude) && (property.addressLine || translation?.addressText) && (
         <Paper sx={{ p: 3, mt: 3 }}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -346,7 +343,6 @@ const PropertyDetailPage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Favorite Success Message */}
       <Snackbar
         open={!!favoriteMessage}
         autoHideDuration={3000}

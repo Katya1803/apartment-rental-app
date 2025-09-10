@@ -1,8 +1,7 @@
 // app-frontend/src/components/admin/LeafletMapPicker.tsx
-// Thay thế GoogleMapPicker với tính năng click-to-pick location
 import React, { useEffect, useRef, useState } from 'react'
 import { Box, Typography, Alert, Button, Paper, Stack } from '@mui/material'
-import { LocationOn as LocationIcon, MyLocation as MyLocationIcon, Refresh as RefreshIcon } from '@mui/icons-material'
+import { MyLocation as MyLocationIcon, Refresh as RefreshIcon } from '@mui/icons-material'
 
 interface LeafletMapPickerProps {
   latitude?: number
@@ -34,7 +33,6 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         setLoading(true)
         setError(null)
 
-        // Load Leaflet CSS if not already loaded
         if (!document.querySelector('link[href*="leaflet.css"]')) {
           const cssLink = document.createElement('link')
           cssLink.rel = 'stylesheet'
@@ -42,7 +40,6 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
           document.head.appendChild(cssLink)
         }
 
-        // Load Leaflet JS if not already loaded
         if (!(window as any).L) {
           const script = document.createElement('script')
           script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
@@ -56,7 +53,7 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         initializeMap()
       } catch (err) {
         console.error('Failed to load Leaflet:', err)
-        setError('Failed to load map')
+        setError('Không tải được bản đồ, vui lòng thử lại.')
       } finally {
         setLoading(false)
       }
@@ -65,7 +62,6 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
     loadLeaflet()
   }, [])
 
-  // Update marker when coordinates change
   useEffect(() => {
     if (mapInstanceRef.current && markerRef.current && typeof latitude === 'number' && typeof longitude === 'number') {
       const L = (window as any).L
@@ -81,16 +77,13 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
     const initialLat = typeof latitude === 'number' ? latitude : defaultLat
     const initialLng = typeof longitude === 'number' ? longitude : defaultLng
 
-    // Create map
     const map = L.map(mapRef.current).setView([initialLat, initialLng], 16)
 
-    // Add tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(map)
 
-    // Custom draggable marker icon (red for admin)
     const customIcon = L.divIcon({
       html: `
         <div style="
@@ -117,58 +110,27 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       iconAnchor: [14, 28]
     })
 
-    // Add draggable marker
     const marker = L.marker([initialLat, initialLng], { 
       icon: customIcon,
       draggable: true
     }).addTo(map)
 
-    // Click on map to move marker
     map.on('click', (e: any) => {
       const { lat, lng } = e.latlng
       marker.setLatLng([lat, lng])
       onLocationChange(lat, lng)
     })
 
-    // Drag marker to change location
     marker.on('dragend', (e: any) => {
       const { lat, lng } = e.target.getLatLng()
       onLocationChange(lat, lng)
     })
 
-    // Store references
     mapInstanceRef.current = map
     markerRef.current = marker
-
-    console.log('Leaflet map initialized for admin')
   }
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported')
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        
-        if (mapInstanceRef.current && markerRef.current) {
-          markerRef.current.setLatLng([lat, lng])
-          mapInstanceRef.current.setView([lat, lng], 16)
-          onLocationChange(lat, lng)
-        }
-      },
-      (err) => {
-        console.error('Geolocation error:', err)
-        setError('Unable to get your location')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-    )
-  }
-
-  const resetLocation = () => {
+  const resetToDefault = () => {
     if (mapInstanceRef.current && markerRef.current) {
       markerRef.current.setLatLng([defaultLat, defaultLng])
       mapInstanceRef.current.setView([defaultLat, defaultLng], 12)
@@ -176,30 +138,51 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
     }
   }
 
-  if (loading) {
-    return (
-      <Paper sx={{ p: 2, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="text.secondary">Loading map...</Typography>
-      </Paper>
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Trình duyệt không hỗ trợ định vị GPS.')
+      resetToDefault()
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        if (mapInstanceRef.current && markerRef.current) {
+          markerRef.current.setLatLng([lat, lng])
+          mapInstanceRef.current.setView([lat, lng], 16)
+          onLocationChange(lat, lng)
+          setError(null)
+        }
+      },
+      (err) => {
+        console.error('Geolocation error:', err)
+        if (err.code === 1) {
+          setError('Bạn đã từ chối quyền truy cập vị trí. Hãy cho phép trong cài đặt trình duyệt.')
+        } else if (err.code === 2) {
+          setError('Không thể xác định vị trí. Vui lòng thử lại.')
+        } else if (err.code === 3) {
+          setError('Lấy vị trí quá lâu, vui lòng thử lại.')
+        } else {
+          setError('Không thể lấy vị trí.')
+        }
+        resetToDefault()
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     )
   }
 
-  if (error) {
+  if (loading) {
     return (
-      <Paper sx={{ p: 2, height }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-        <Typography variant="body2" color="text.secondary">
-          You can still enter coordinates manually using the latitude/longitude fields above.
-        </Typography>
+      <Paper sx={{ p: 2, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography color="text.secondary">Đang tải bản đồ...</Typography>
       </Paper>
     )
   }
 
   return (
     <Paper sx={{ overflow: 'hidden', borderRadius: 1 }}>
-      {/* Map Container */}
       <Box
         ref={mapRef}
         sx={{
@@ -211,8 +194,7 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
           }
         }}
       />
-      
-      {/* Control Bar */}
+
       <Box sx={{ 
         p: 2, 
         bgcolor: 'grey.50', 
@@ -220,20 +202,26 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         justifyContent: 'space-between', 
         alignItems: 'center',
         borderTop: '1px solid',
-        borderColor: 'divider'
+        borderColor: 'divider',
+        flexWrap: 'wrap'
       }}>
         <Box>
           <Typography variant="body2" color="primary" sx={{ fontWeight: 500 }}>
-            Click map or drag marker to set location
+            Click bản đồ hoặc kéo marker để chọn vị trí
           </Typography>
           {typeof latitude === 'number' && typeof longitude === 'number' && (
             <Typography variant="caption" color="text.secondary">
               {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </Typography>
           )}
+          {error && (
+            <Alert severity="warning" sx={{ mt: 1, p: 0.5 }}>
+              {error}
+            </Alert>
+          )}
         </Box>
-        
-        <Stack direction="row" spacing={1}>
+
+        <Stack direction="row" spacing={1} sx={{ mt: { xs: 1, sm: 0 } }}>
           <Button
             size="small"
             variant="outlined"
@@ -242,12 +230,11 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
           >
             My Location
           </Button>
-          
           <Button
             size="small"
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={resetLocation}
+            onClick={resetToDefault}
           >
             Reset
           </Button>
