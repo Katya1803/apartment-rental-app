@@ -1,4 +1,11 @@
 import React, { useState, useEffect } from 'react'
+
+import {
+  Checkbox,
+  ListItemText,
+  OutlinedInput
+} from '@mui/material'
+
 import {
   Box,
   Card,
@@ -608,42 +615,140 @@ const AdminPropertyForm: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12}>
+                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    🛎️ Included Services
+                    <Typography variant="body2" color="text.secondary">
+                      (Services provided with the property)
+                    </Typography>
+                  </Typography>
+                  
                   <Autocomplete
                     multiple
-                    options={amenities}
+                    options={amenities.filter(a => a.key.startsWith('IS_'))}
                     getOptionLabel={(option) => option.label}
-                    value={amenities.filter(a => formData.amenityIds.includes(a.id))}
-                    onChange={(_, newValue) => {
-                      handleFieldChangeWithValidation('amenityIds', newValue.map(a => a.id))
+                    value={amenities.filter(a => a.key.startsWith('IS_') && formData.amenityIds.includes(a.id))}
+                    onChange={(event, newValue) => {
+                      // Keep existing interior facilities + new included services
+                      const interiorFacilities = amenities
+                        .filter(a => a.key.startsWith('IF_') && formData.amenityIds.includes(a.id))
+                        .map(a => a.id)
+                      
+                      const selectedIncludedServices = newValue.map(a => a.id)
+                      handleFieldChangeWithValidation('amenityIds', [...selectedIncludedServices, ...interiorFacilities])
                     }}
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, index) => (
-                        <Chip variant="outlined" label={option.label} {...getTagProps({ index })} key={option.id} />
-                      ))
-                    }
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Select Amenities"
-                        placeholder="Choose amenities..."
-                        helperText="Select all amenities available in this property"
+                        label="Select Included Services"
+                        placeholder="Choose included services..."
+                        helperText="Select services included in the rent (utilities, management, etc.)"
                       />
                     )}
                   />
                 </Grid>
 
-                {formData.amenityIds.length > 0 && (
+                {/* Show Selected Included Services */}
+                {formData.amenityIds.filter(id => 
+                  amenities.find(a => a.id === id && a.key.startsWith('IS_'))
+                ).length > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Selected Amenities ({formData.amenityIds.length}):
+                      Selected Included Services ({formData.amenityIds.filter(id => 
+                        amenities.find(a => a.id === id && a.key.startsWith('IS_'))
+                      ).length}):
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {amenities
-                        .filter(a => formData.amenityIds.includes(a.id))
+                        .filter(a => a.key.startsWith('IS_') && formData.amenityIds.includes(a.id))
                         .map(a => (
-                          <Chip key={a.id} label={a.label} color="primary" variant="outlined" size="small" />
+                          <Chip 
+                            key={a.id} 
+                            label={a.label} 
+                            color="primary" 
+                            variant="outlined" 
+                            size="small"
+                          />
                         ))}
                     </Box>
+                  </Grid>
+                )}
+
+                {/* Interior Facilities Section */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    🏠 Interior Facilities
+                    <Typography variant="body2" color="text.secondary">
+                      (Furniture and appliances in the property)
+                    </Typography>
+                  </Typography>
+                  
+                  <Autocomplete
+                    multiple
+                    options={amenities.filter(a => a.key.startsWith('IF_'))}
+                    getOptionLabel={(option) => option.label}
+                    value={amenities.filter(a => a.key.startsWith('IF_') && formData.amenityIds.includes(a.id))}
+                    onChange={(event, newValue) => {
+                      // Keep existing included services + new interior facilities
+                      const includedServices = amenities
+                        .filter(a => a.key.startsWith('IS_') && formData.amenityIds.includes(a.id))
+                        .map(a => a.id)
+                      
+                      const selectedInteriorFacilities = newValue.map(a => a.id)
+                      handleFieldChangeWithValidation('amenityIds', [...includedServices, ...selectedInteriorFacilities])
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Select Interior Facilities"
+                        placeholder="Choose furniture and appliances..."
+                        helperText="Select furniture and appliances available in the property"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* Show Selected Interior Facilities */}
+                {formData.amenityIds.filter(id => 
+                  amenities.find(a => a.id === id && a.key.startsWith('IF_'))
+                ).length > 0 && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Selected Interior Facilities ({formData.amenityIds.filter(id => 
+                        amenities.find(a => a.id === id && a.key.startsWith('IF_'))
+                      ).length}):
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {amenities
+                        .filter(a => a.key.startsWith('IF_') && formData.amenityIds.includes(a.id))
+                        .map(a => (
+                          <Chip 
+                            key={a.id} 
+                            label={a.label} 
+                            color="secondary" 
+                            variant="outlined" 
+                            size="small"
+                          />
+                        ))}
+                    </Box>
+                  </Grid>
+                )}
+
+                {/* Summary */}
+                {formData.amenityIds.length > 0 && (
+                  <Grid item xs={12}>
+                    <Alert severity="success" sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2">
+                        Total Selected: {formData.amenityIds.length} amenities
+                      </Typography>
+                      <Typography variant="body2">
+                        • {formData.amenityIds.filter(id => 
+                          amenities.find(a => a.id === id && a.key.startsWith('IS_'))
+                        ).length} Included Services
+                        • {formData.amenityIds.filter(id => 
+                          amenities.find(a => a.id === id && a.key.startsWith('IF_'))
+                        ).length} Interior Facilities
+                      </Typography>
+                    </Alert>
                   </Grid>
                 )}
               </Grid>
