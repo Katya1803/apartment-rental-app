@@ -372,7 +372,6 @@ const AdminContent: React.FC = () => {
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       {contentPage.status === 'PUBLISHED' && (
                         <IconButton size="small" color="info">
-                          <ViewIcon fontSize="small" />
                         </IconButton>
                       )}
                       {canEdit && (

@@ -24,7 +24,8 @@ import {
   AspectRatio as AreaIcon,
   LocationOn as LocationIcon,
   Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon
+  FavoriteBorder as FavoriteBorderIcon,
+  Pets as PetsIcon
 } from '@mui/icons-material'
 import { PropertyService } from '../../services/propertyService'
 import { FavoritesService } from '../../services/favoritesService'
@@ -263,6 +264,15 @@ const PropertyDetailPage: React.FC = () => {
                   <Typography color="action">🏢</Typography>
                   <Typography>
                     <strong>{t('floor')} {property.floorNo}</strong>
+                  </Typography>
+                </Box>
+              )}
+
+              {property.petPolicy && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PetsIcon color="action" />
+                  <Typography>
+                    <strong>{property.petPolicy}</strong>
                   </Typography>
                 </Box>
               )}

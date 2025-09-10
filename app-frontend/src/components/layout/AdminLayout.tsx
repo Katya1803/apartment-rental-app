@@ -83,12 +83,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   // Navigation items based on user role
   const getNavigationItems = () => {
     const baseItems = [
-      {
-        text: 'Dashboard',
-        icon: <DashboardIcon />,
-        path: ROUTES.ADMIN.DASHBOARD,
-        roles: ['SUPER_ADMIN', 'ADMIN', 'EDITOR']
-      },
+
       {
         text: 'Properties',
         icon: <HomeIcon />,

@@ -11,8 +11,15 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app.upload")
 public class FileUploadConfig {
 
-    private String path = "uploads/";
+    // Cloudinary settings
+    private String provider = "cloudinary"; // "local" hoặc "cloudinary"
+    private String cloudinaryFolder = "qapartment"; // Folder trên Cloudinary
+
+    // Legacy local settings (backup)
+    private String path = "/tmp/uploads/";
     private String baseUrl = "/uploads/";
+
+    // File validation
     private long maxFileSize = 10485760L; // 10MB
     private long maxRequestSize = 52428800L; // 50MB
 
@@ -31,5 +38,9 @@ public class FileUploadConfig {
 
     public boolean isValidDocumentType(String mimeType) {
         return allowedDocumentTypes.contains(mimeType);
+    }
+
+    public boolean isCloudinaryEnabled() {
+        return "cloudinary".equals(provider);
     }
 }
