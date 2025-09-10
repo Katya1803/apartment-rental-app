@@ -1,6 +1,6 @@
 package com.katya.app.service.impl;
 
-import com.katya.app.config.FileUploadConfig;
+import com.katya.app.config.CloudinaryConfig;
 import com.katya.app.dto.mapper.PropertyMapper;
 import com.katya.app.dto.response.FileUploadResponse;
 import com.katya.app.dto.response.PropertyImageResponse;
@@ -11,6 +11,7 @@ import com.katya.app.model.entity.Property;
 import com.katya.app.model.entity.PropertyImage;
 import com.katya.app.repository.PropertyImageRepository;
 import com.katya.app.repository.PropertyRepository;
+import com.katya.app.service.CloudinaryService;
 import com.katya.app.service.FileUploadService;
 import com.katya.app.util.constant.BusinessConstants;
 import com.katya.app.util.enums.FileType;
@@ -20,14 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,7 +30,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FileUploadServiceImpl implements FileUploadService {
 
-    private final FileUploadConfig fileUploadConfig;
+    private final CloudinaryService cloudinaryService;
+    private final CloudinaryConfig cloudinaryConfig;
     private final PropertyRepository propertyRepository;
     private final PropertyImageRepository propertyImageRepository;
     private final PropertyMapper propertyMapper;
@@ -46,30 +42,25 @@ public class FileUploadServiceImpl implements FileUploadService {
         validateFile(file, expectedType);
 
         try {
-            String fileName = generateFileName(file.getOriginalFilename());
-            String relativePath = getRelativePath(expectedType) + fileName;
-            Path filePath = Paths.get(fileUploadConfig.getPath(), relativePath);
+            String folder = cloudinaryConfig.getFolder() + "/" + expectedType.name().toLowerCase();
+            Map<String, Object> result = cloudinaryService.uploadImage(file, folder);
 
-            // Create directories if they don't exist
-            Files.createDirectories(filePath.getParent());
+            String publicId = (String) result.get("public_id");
+            String secureUrl = (String) result.get("secure_url");
+            Integer bytes = (Integer) result.get("bytes");
 
-            // Save file
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            String fileUrl = fileUploadConfig.getBaseUrl() + relativePath;
-
-            log.info("File uploaded successfully: {}", fileName);
+            log.info("File uploaded successfully to Cloudinary: {}", publicId);
 
             return FileUploadResponse.builder()
-                    .fileName(fileName)
-                    .filePath(relativePath)
-                    .fileUrl(fileUrl)
+                    .fileName(publicId)
+                    .filePath(secureUrl)
+                    .fileUrl(secureUrl)
                     .mimeType(file.getContentType())
-                    .fileSize(file.getSize())
+                    .fileSize(bytes != null ? bytes.longValue() : file.getSize())
                     .fileSizeFormatted(formatFileSize(file.getSize()))
                     .build();
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Failed to upload file: {}", e.getMessage(), e);
             throw new FileUploadException("Failed to upload file: " + e.getMessage());
         }
@@ -78,25 +69,20 @@ public class FileUploadServiceImpl implements FileUploadService {
     @Override
     @Transactional
     public PropertyImageResponse uploadPropertyImage(Long propertyId, MultipartFile file, Short sortOrder, Boolean isCover) {
-        // Validate property exists
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Property", "id", propertyId));
 
-        // Check image limit
         long currentImageCount = propertyImageRepository.countByPropertyId(propertyId);
         if (currentImageCount >= BusinessConstants.MAX_IMAGES_PER_PROPERTY) {
             throw new ValidationException("Cannot add more than " + BusinessConstants.MAX_IMAGES_PER_PROPERTY + " images per property");
         }
 
-        // Upload file
         FileUploadResponse uploadResponse = uploadFile(file, FileType.IMAGE);
 
-        // If setting as cover, remove cover flag from other images
         if (Boolean.TRUE.equals(isCover)) {
             propertyImageRepository.removeCoverFlagFromProperty(propertyId);
         }
 
-        // Create property image entity
         PropertyImage propertyImage = PropertyImage.builder()
                 .property(property)
                 .filePath(uploadResponse.getFilePath())
@@ -115,13 +101,12 @@ public class FileUploadServiceImpl implements FileUploadService {
 
     @Override
     @Transactional
-    public void deleteFile(String filePath) {
-        try {
-            Path path = Paths.get(fileUploadConfig.getPath(), filePath);
-            Files.deleteIfExists(path);
-            log.info("File deleted: {}", filePath);
-        } catch (IOException e) {
-            log.warn("Failed to delete file: {}", filePath, e);
+    public void deleteFile(String filePathOrUrl) {
+        boolean deleted = cloudinaryService.deleteImage(filePathOrUrl);
+        if (deleted) {
+            log.info("File deleted from Cloudinary: {}", filePathOrUrl);
+        } else {
+            log.warn("Failed to delete file from Cloudinary: {}", filePathOrUrl);
         }
     }
 
@@ -131,10 +116,8 @@ public class FileUploadServiceImpl implements FileUploadService {
         PropertyImage image = propertyImageRepository.findById(imageId)
                 .orElseThrow(() -> new ResourceNotFoundException("PropertyImage", "id", imageId));
 
-        // Delete physical file
         deleteFile(image.getFilePath());
 
-        // Delete database record
         propertyImageRepository.delete(image);
 
         log.info("Property image deleted: {}", imageId);
@@ -166,24 +149,21 @@ public class FileUploadServiceImpl implements FileUploadService {
         PropertyImage image = propertyImageRepository.findById(imageId)
                 .orElseThrow(() -> new ResourceNotFoundException("PropertyImage", "id", imageId));
 
-        // Remove cover flag from all images of this property
         propertyImageRepository.removeCoverFlagFromProperty(image.getProperty().getId());
 
-        // Set this image as cover
         image.setIsCover(true);
         propertyImageRepository.save(image);
 
         log.info("Cover image set: {}", imageId);
     }
 
-    // Helper methods
     private void validateFile(MultipartFile file, FileType expectedType) {
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty");
         }
 
-        if (file.getSize() > fileUploadConfig.getMaxFileSize()) {
-            throw new FileUploadException("File size exceeds maximum allowed size");
+        if (file.getSize() > 10485760L) {
+            throw new FileUploadException("File size exceeds maximum allowed size (10MB)");
         }
 
         String mimeType = file.getContentType();
@@ -191,42 +171,12 @@ public class FileUploadServiceImpl implements FileUploadService {
             throw new FileUploadException("Cannot determine file type");
         }
 
-        boolean isValidType = false;
-        switch (expectedType) {
-            case IMAGE:
-                isValidType = fileUploadConfig.isValidImageType(mimeType);
-                break;
-            case DOCUMENT:
-                isValidType = fileUploadConfig.isValidDocumentType(mimeType);
-                break;
-            case OTHER:
-                isValidType = true; // Allow any type
-                break;
+        if (expectedType == FileType.IMAGE) {
+            List<String> allowedTypes = List.of("image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp");
+            if (!allowedTypes.contains(mimeType)) {
+                throw new FileUploadException("File type not allowed: " + mimeType);
+            }
         }
-
-        if (!isValidType) {
-            throw new FileUploadException("File type not allowed: " + mimeType);
-        }
-    }
-
-    private String generateFileName(String originalFileName) {
-        String extension = "";
-        if (originalFileName != null && originalFileName.contains(".")) {
-            extension = originalFileName.substring(originalFileName.lastIndexOf("."));
-        }
-        return UUID.randomUUID().toString() + extension;
-    }
-
-    private String getRelativePath(FileType fileType) {
-        String typeFolder = switch (fileType) {
-            case IMAGE -> "images/";
-            case DOCUMENT -> "documents/";
-            default -> "others/";
-        };
-
-        // Add date-based subfolder for organization
-        LocalDateTime now = LocalDateTime.now();
-        return typeFolder + now.getYear() + "/" + String.format("%02d", now.getMonthValue()) + "/";
     }
 
     private String formatFileSize(Long size) {

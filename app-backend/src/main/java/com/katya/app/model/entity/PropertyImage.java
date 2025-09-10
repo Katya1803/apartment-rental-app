@@ -39,9 +39,16 @@ public class PropertyImage extends BaseEntity {
     @Builder.Default
     private Boolean isCover = false;
 
-    // Helper methods
     public String getImageUrl() {
-        return filePath != null ? "http://localhost:8080/uploads/" + filePath : "/images/placeholder.jpg";
+        if (filePath == null) {
+            return "/images/placeholder.jpg";
+        }
+
+        if (filePath.startsWith("http")) {
+            return filePath;
+        }
+
+        return "http://localhost:8080/uploads/" + filePath;
     }
 
     public String getImageSizeFormatted() {

@@ -1,5 +1,6 @@
 package com.katya.app.dto.mapper;
 
+import com.katya.app.config.CloudinaryConfig;
 import com.katya.app.dto.request.PropertyCreateRequest;
 import com.katya.app.dto.request.PropertyTranslationRequest;
 import com.katya.app.dto.request.PropertyUpdateRequest;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class PropertyMapper {
 
     private final UserMapper userMapper;
+    private final CloudinaryConfig cloudinaryConfig;
 
     public Property toEntity(PropertyCreateRequest request) {
         Property property = Property.builder()
@@ -202,10 +204,27 @@ public class PropertyMapper {
             return null;
         }
 
+        // Build imageUrl - handle both Cloudinary and local files
+        String imageUrl;
+        if (image.getFilePath() != null) {
+            if (image.getFilePath().startsWith("http")) {
+                // Already a full Cloudinary URL
+                imageUrl = image.getFilePath();
+            } else if (image.getFilePath().contains("/")) {
+                // Cloudinary public_id format, construct URL
+                imageUrl = "https://res.cloudinary.com/" + cloudinaryConfig.getCloudName() + "/image/upload/" + image.getFilePath();
+            } else {
+                // Local file, use existing logic
+                imageUrl = image.getImageUrl();
+            }
+        } else {
+            imageUrl = "/images/placeholder.jpg";
+        }
+
         return PropertyImageResponse.builder()
                 .id(image.getId())
                 .filePath(image.getFilePath())
-                .imageUrl(image.getImageUrl())
+                .imageUrl(imageUrl)
                 .mimeType(image.getMimeType())
                 .fileSize(image.getFileSize())
                 .fileSizeFormatted(image.getImageSizeFormatted())
