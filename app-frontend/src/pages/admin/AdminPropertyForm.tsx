@@ -347,10 +347,10 @@ const AdminPropertyForm: React.FC = () => {
         <Card>
           <CardContent>
             <Tabs value={currentTab} onChange={(e, v) => setCurrentTab(v)}>
-              <Tab label="Basic Information" />
-              <Tab label="Multilingual Content" />
-              <Tab label="Location & Amenities" />
-              <Tab label="Images" />
+              <Tab label="Thông tin cơ bản" />
+              <Tab label="Nội dung đa ngôn ngữ" />
+              <Tab label="Vị trí & Tiện nghi" />
+              <Tab label="Hình ảnh" />
             </Tabs>
 
             <TabPanel value={currentTab} index={0}>
@@ -358,10 +358,10 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Slug"
+                    label="Đường dẫn"
                     value={formData.slug}
                     onChange={e => handleFieldChangeWithValidation('slug', e.target.value)}
-                    helperText={validationErrors.slug || 'URL-friendly identifier (e.g., luxury-apartment-hanoi)'}
+                    helperText={validationErrors.slug || 'Đường dẫn tối ưu (nên có), chỉ gồm chữ thường, số và dấu gạch ngang. Ví dụ: can-ho-cho-thue'}
                     error={!!validationErrors.slug}
                     required
                     InputProps={{
@@ -376,20 +376,20 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Property Code"
+                    label="Mã phòng (Code)"
                     value={formData.code}
                     onChange={e => handleFieldChangeWithValidation('code', e.target.value)}
-                    helperText="Internal reference code (optional)"
+                    helperText="Mã phòng nếu có (ví dụ: A101)."
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Property Type"
-                    value="🏠 Room (Phòng trọ)"
+                    label="Kiểu phòng"
+                    value="Room"
                     disabled
-                    helperText="System default - Room type only"
+                    helperText="Hệ thống mặc định là Room (Phòng cho thuê)."
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
@@ -400,11 +400,11 @@ const AdminPropertyForm: React.FC = () => {
                     <Select
                       value={formData.status}
                       onChange={e => handleFieldChangeWithValidation('status', e.target.value)}
-                      label="Status"
+                      label="Trạng thái"
                     >
-                      <MenuItem value="DRAFT">📝 Draft</MenuItem>
-                      <MenuItem value="PUBLISHED">✅ Published</MenuItem>
-                      <MenuItem value="HIDDEN">🙈 Hidden</MenuItem>
+                      <MenuItem value="DRAFT">📝 Bản nháp</MenuItem>
+                      <MenuItem value="PUBLISHED">✅ Hiển thị pulbic</MenuItem>
+                      <MenuItem value="HIDDEN">🙈 Ẩn</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -412,13 +412,13 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Monthly Price"
+                    label="Giá thuê hàng tháng (USD)"
                     type="number"
                     value={formData.priceMonth}
                     onChange={e => handleFieldChangeWithValidation('priceMonth', e.target.value)}
-                    placeholder="Enter monthly price..."
+                    placeholder="Nhập giá thuê hàng tháng..."
                     error={!!validationErrors.priceMonth}
-                    helperText={validationErrors.priceMonth || 'Enter price in USD'}
+                    helperText={validationErrors.priceMonth || 'Nhập giá bằng USD'}
                     InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                     required
                   />
@@ -427,7 +427,7 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Area (sqm)"
+                    label="Diện tích (sqm)"
                     type="number"
                     value={formData.areaSqm ?? ''}
                     onChange={e => handleFieldChangeWithValidation('areaSqm', e.target.value ? parseFloat(e.target.value) : undefined)}
@@ -438,7 +438,7 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
-                    label="Bedrooms"
+                    label="Số phòng ngủ"
                     type="number"
                     value={formData.bedrooms ?? ''}
                     onChange={e => handleFieldChangeWithValidation('bedrooms', e.target.value ? parseInt(e.target.value, 10) : undefined)}
@@ -449,7 +449,7 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
-                    label="Bathrooms"
+                    label="Số phòng tắm"
                     type="number"
                     value={formData.bathrooms ?? ''}
                     onChange={e => handleFieldChangeWithValidation('bathrooms', e.target.value ? parseInt(e.target.value, 10) : undefined)}
@@ -460,7 +460,7 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
-                    label="Floor Number"
+                    label="Số tầng"
                     type="number"
                     value={formData.floorNo ?? ''}
                     onChange={e => handleFieldChangeWithValidation('floorNo', e.target.value ? parseInt(e.target.value, 10) : undefined)}
@@ -470,7 +470,7 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Pet Policy"
+                    label="Chính sách thú cưng"
                     value={formData.petPolicy}
                     onChange={e => handleFieldChangeWithValidation('petPolicy', e.target.value)}
                     helperText="e.g., Pets allowed, No pets, Small pets only"
@@ -480,17 +480,17 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="View Description"
+                    label="Mô tả"
                     value={formData.viewDesc}
                     onChange={e => handleFieldChangeWithValidation('viewDesc', e.target.value)}
-                    helperText="e.g., City view, Garden view, Lake view"
+                    helperText="Mô tả chi tiết về phòng cho thuê, ví dụ: hướng nhìn, tiện nghi nổi bật..."
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <FormControlLabel
                     control={<Switch checked={formData.isFeatured} onChange={e => handleFieldChangeWithValidation('isFeatured', e.target.checked)} />}
-                    label="Featured Property"
+                    label="Phòng nổi bật"
                   />
                 </Grid>
               </Grid>
@@ -511,7 +511,7 @@ const AdminPropertyForm: React.FC = () => {
                         <Grid item xs={12}>
                           <TextField
                             fullWidth
-                            label="Title"
+                            label="Tiêu đề"
                             value={formData.translations[locale.code]?.title || ''}
                             onChange={e => handleTranslationChangeWithValidation(locale.code, 'title', e.target.value)}
                             helperText={locale.code === 'vi' ? (validationErrors.translations || 'Vietnamese title is recommended') : undefined}
@@ -522,22 +522,22 @@ const AdminPropertyForm: React.FC = () => {
                         <Grid item xs={12}>
                           <TextField
                             fullWidth
-                            label="Description (Markdown)"
+                            label="Mô tả chi tiết (Markdown)"
                             multiline
                             rows={4}
                             value={formData.translations[locale.code]?.descriptionMd || ''}
                             onChange={e => handleTranslationChangeWithValidation(locale.code, 'descriptionMd', e.target.value)}
-                            helperText="Use Markdown syntax for formatting"
+                            helperText="Viết chi tiết mô tả của phòng cho thuê"
                           />
                         </Grid>
 
                         <Grid item xs={12}>
                           <TextField
                             fullWidth
-                            label="Address Text"
+                            label="Địa chỉ hiển thị"
                             value={formData.translations[locale.code]?.addressText || ''}
                             onChange={e => handleTranslationChangeWithValidation(locale.code, 'addressText', e.target.value)}
-                            helperText="Human-readable address"
+                            helperText="Địa chỉ dễ đọc, nên chi tiết phù hợp các ngôn ngữ"
                           />
                         </Grid>
                       </Grid>
@@ -552,48 +552,48 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationIcon />
-                    Location
+                    Địa chỉ
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Address Line"
+                    label="Địa chỉ chi tiết"
                     value={formData.addressLine}
                     onChange={e => handleFieldChangeWithValidation('addressLine', e.target.value)}
-                    helperText="Street address, building name, etc."
+                    helperText="Tên đuờng, số nhà, phường/xã, quận/huyện, thành phố..."
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Latitude"
+                    label="Vĩ độ"
                     type="number"
                     value={formData.latitude ?? ''}
                     onChange={e => handleFieldChangeWithValidation('latitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                     inputProps={{ step: 'any', min: -90, max: 90 }}
-                    helperText="GPS coordinate (e.g., 21.0285)"
+                    helperText="Tọa độ GPS (ví dụ: 21.0285)"
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Longitude"
+                    label="Kinh độ"
                     type="number"
                     value={formData.longitude ?? ''}
                     onChange={e => handleFieldChangeWithValidation('longitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                     inputProps={{ step: 'any', min: -180, max: 180 }}
-                    helperText="GPS coordinate (e.g., 105.8542)"
+                    helperText="Tọa độ GPS (ví dụ: 105.8542)"
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationIcon />
-                    Property Location
+                    Địa chỉ trên bản đồ
                   </Typography>
                 <LeafletMapPicker
                   latitude={formData.latitude}
@@ -610,15 +610,15 @@ const AdminPropertyForm: React.FC = () => {
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <HomeIcon />
-                    Amenities
+                    Nội dung tiện ích
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12}>
                   <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🛎️ Included Services
+                    🛎️ Dịch vụ đi kèm
                     <Typography variant="body2" color="text.secondary">
-                      (Services provided with the property)
+                      (Các dịch vụ đi kèm với phòng cho thuê)
                     </Typography>
                   </Typography>
                   
@@ -639,9 +639,9 @@ const AdminPropertyForm: React.FC = () => {
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Select Included Services"
-                        placeholder="Choose included services..."
-                        helperText="Select services included in the rent (utilities, management, etc.)"
+                        label="Chọn các dịch vụ đi kèm"
+                        placeholder="Chọn các dịch vụ đi kèm..."
+                        helperText="Chọn các dịch vụ đi kèm trong giá thuê (tiện ích, quản lý, v.v.)"
                       />
                     )}
                   />
@@ -653,7 +653,7 @@ const AdminPropertyForm: React.FC = () => {
                 ).length > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Selected Included Services ({formData.amenityIds.filter(id => 
+                      Các dịch vụ đi kèm đã được chọn  ({formData.amenityIds.filter(id => 
                         amenities.find(a => a.id === id && a.key.startsWith('IS_'))
                       ).length}):
                     </Typography>
@@ -676,9 +676,9 @@ const AdminPropertyForm: React.FC = () => {
                 {/* Interior Facilities Section */}
                 <Grid item xs={12}>
                   <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🏠 Interior Facilities
+                    🏠 Tiện nghi nội thất
                     <Typography variant="body2" color="text.secondary">
-                      (Furniture and appliances in the property)
+                        (Đồ nội thất và thiết bị trong phòng)
                     </Typography>
                   </Typography>
                   
@@ -699,9 +699,9 @@ const AdminPropertyForm: React.FC = () => {
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Select Interior Facilities"
-                        placeholder="Choose furniture and appliances..."
-                        helperText="Select furniture and appliances available in the property"
+                        label="Chọn các tiện nghi nội thất"
+                        placeholder="Chọn đồ nội thất và thiết bị..."
+                        helperText="Chọn đồ nội thất và thiết bị có sẵn trong phòng"
                       />
                     )}
                   />
@@ -713,7 +713,7 @@ const AdminPropertyForm: React.FC = () => {
                 ).length > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Selected Interior Facilities ({formData.amenityIds.filter(id => 
+                      Các đồ nội thất đã chọn ({formData.amenityIds.filter(id => 
                         amenities.find(a => a.id === id && a.key.startsWith('IF_'))
                       ).length}):
                     </Typography>
@@ -738,15 +738,15 @@ const AdminPropertyForm: React.FC = () => {
                   <Grid item xs={12}>
                     <Alert severity="success" sx={{ mt: 2 }}>
                       <Typography variant="subtitle2">
-                        Total Selected: {formData.amenityIds.length} amenities
+                        Số lượng đã chọn: {formData.amenityIds.length} tiện nghi
                       </Typography>
                       <Typography variant="body2">
                         • {formData.amenityIds.filter(id => 
                           amenities.find(a => a.id === id && a.key.startsWith('IS_'))
-                        ).length} Included Services
+                        ).length} Dịch vụ đi kèm
                         • {formData.amenityIds.filter(id => 
                           amenities.find(a => a.id === id && a.key.startsWith('IF_'))
-                        ).length} Interior Facilities
+                        ).length} Đồ nội thất
                       </Typography>
                     </Alert>
                   </Grid>
@@ -779,13 +779,13 @@ const AdminPropertyForm: React.FC = () => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
               <Button variant="outlined" onClick={() => navigate(ROUTES.ADMIN.PROPERTIES)} disabled={saving}>
-                Cancel
+                Hủy
               </Button>
 
               <Stack direction="row" spacing={2}>
                 {currentTab > 0 && (
                   <Button variant="outlined" type="button" onClick={() => setCurrentTab(currentTab - 1)} disabled={saving}>
-                    Previous
+                    Quay lại
                   </Button>
                 )}
 

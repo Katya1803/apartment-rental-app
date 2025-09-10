@@ -134,13 +134,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             {/* Left: Logo & Company Name */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {/* Vite Logo */}
-              <img 
-                src="/vite.svg" 
-                alt="Logo" 
-                style={{ width: 32, height: 32 }}
-              />
+
               <Typography
-                variant="h6"
+                variant="h4"
                 component="div"
                 sx={{ 
                   fontWeight: 'bold', 

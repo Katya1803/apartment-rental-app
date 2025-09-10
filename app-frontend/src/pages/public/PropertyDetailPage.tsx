@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Apartment as FloorIcon } from '@mui/icons-material'
 import {
   Container,
   Typography,
@@ -237,21 +238,14 @@ const PropertyDetailPage: React.FC = () => {
 
               {property.floorNo && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography color="action">🏢</Typography>
+                  <FloorIcon color="action" />
                   <Typography>
                     <strong>{t('floor')} {property.floorNo}</strong>
                   </Typography>
                 </Box>
               )}
 
-              {property.petPolicy && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PetsIcon color="action" />
-                  <Typography>
-                    <strong>{property.petPolicy}</strong>
-                  </Typography>
-                </Box>
-              )}
+
             </Stack>
 
             <Divider sx={{ mb: 3 }} />

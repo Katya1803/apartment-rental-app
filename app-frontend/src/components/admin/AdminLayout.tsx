@@ -1,4 +1,3 @@
-// app-frontend/src/components/layout/AdminLayout.tsx
 import React, { useState } from 'react'
 import {
   Box,
@@ -132,7 +131,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }
 
-  // Navigation items based on user role
   const getNavigationItems = () => {
     const baseItems = [
       {
@@ -142,7 +140,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         roles: ['SUPER_ADMIN', 'ADMIN', 'EDITOR']
       },
       {
-        text: 'Properties',
+        text: 'Quản lý phòng cho thuê',
         icon: <HomeIcon />,
         path: ROUTES.ADMIN.PROPERTIES,
         roles: ['SUPER_ADMIN', 'ADMIN', 'EDITOR']
@@ -151,19 +149,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     const adminItems = [
       {
-        text: 'Messages',
+        text: 'Quản lý tin nhắn',
         icon: <MessageIcon />,
         path: ROUTES.ADMIN.MESSAGES,
         roles: ['SUPER_ADMIN', 'ADMIN']
       },
       {
-        text: 'Content',
+        text: 'Quản lý nội dung',
         icon: <ArticleIcon />,
         path: ROUTES.ADMIN.CONTENT,
         roles: ['SUPER_ADMIN', 'ADMIN']
       },
       {
-        text: 'Settings',
+        text: 'Quản lý cài đặt',
         icon: <SettingsIcon />,
         path: ROUTES.ADMIN.SETTINGS,
         roles: ['SUPER_ADMIN', 'ADMIN']
@@ -172,7 +170,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     const superAdminItems = [
       {
-        text: 'Users',
+        text: 'Quản lý người dùng',
         icon: <PeopleIcon />,
         path: ROUTES.ADMIN.USERS,
         roles: ['SUPER_ADMIN']
@@ -286,7 +284,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better performance on mobile
+            keepMounted: true, 
           }}
           sx={{
             display: { xs: 'block', md: 'none' },

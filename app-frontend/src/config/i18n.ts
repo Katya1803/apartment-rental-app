@@ -24,6 +24,7 @@ const resources = {
       next: 'Tiếp theo',
       previous: 'Trước đó',
       viewDetails: 'Xem chi tiết',
+      no_guides_available: 'Chưa có hướng dẫn nào',
 
       // Navigation
       home: 'Trang chủ',
@@ -61,7 +62,7 @@ const resources = {
       floor: 'Tầng',
       available: 'Còn trống',
       featured: 'Nổi bật',
-      viewDescription: 'Mô tả view',
+      viewDescription: 'Mô tả chi tiết',
       petPolicy: 'Chính sách thú cưng',
 
       // Search & Filter
@@ -169,6 +170,7 @@ const resources = {
       next: 'Next',
       previous: 'Previous',
       viewDetails: 'View Details',
+      no_guides_available: 'No guides available',
 
       // Navigation
       home: 'Home',
@@ -206,7 +208,7 @@ const resources = {
       floor: 'Floor',
       available: 'Available',
       featured: 'Featured',
-      viewDescription: 'View Description',
+      viewDescription: 'Description',
       petPolicy: 'Pet Policy',
 
       // Search & Filter
@@ -314,6 +316,7 @@ const resources = {
       next: '次へ',
       previous: '前へ',
       viewDetails: '詳細を見る',
+      no_guides_available: '利用可能なガイドがありません',
 
       // Navigation
       home: 'ホーム',
@@ -351,7 +354,7 @@ const resources = {
       floor: '階',
       available: '空室あり',
       featured: '注目',
-      viewDescription: '景色の説明',
+      viewDescription: '詳細な説明',
       petPolicy: 'ペット規約',
 
       // Search & Filter
