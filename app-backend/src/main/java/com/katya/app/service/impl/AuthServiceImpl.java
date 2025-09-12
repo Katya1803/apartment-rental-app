@@ -1,9 +1,12 @@
 package com.katya.app.service.impl;
 
 import com.katya.app.dto.request.LoginRequest;
+import com.katya.app.dto.request.PasswordChangeRequest;
 import com.katya.app.dto.response.LoginResponse;
 import com.katya.app.dto.response.UserSummaryResponse;
+import com.katya.app.exception.ResourceNotFoundException;
 import com.katya.app.exception.UnauthorizedException;
+import com.katya.app.exception.ValidationException;
 import com.katya.app.model.entity.AppUser;
 import com.katya.app.model.entity.RefreshToken;
 import com.katya.app.repository.AppUserRepository;
@@ -16,8 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDateTime;
 
@@ -30,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AppUserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -99,6 +105,37 @@ public class AuthServiceImpl implements AuthService {
                         refreshTokenRepository.save(token);
                     });
         }
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, PasswordChangeRequest request) {
+        log.info("Changing password for user ID: {}", userId);
+
+        // Find the user
+        AppUser user = userRepository.findByIdAndIsActiveTrue(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // Check current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new ValidationException("Current password is incorrect");
+        }
+
+        // Validate new password
+        if (request.getNewPassword().length() < 6) {
+            throw new ValidationException("New password must be at least 6 characters long");
+        }
+
+        // Check password confirmation
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new ValidationException("New password and confirmation password do not match");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Password changed successfully for user: {}", user.getEmail());
     }
 
     private void saveRefreshToken(AppUser user, String token) {

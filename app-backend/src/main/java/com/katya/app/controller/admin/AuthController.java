@@ -2,6 +2,7 @@ package com.katya.app.controller.admin;
 
 import com.katya.app.dto.common.ApiResponse;
 import com.katya.app.dto.request.LoginRequest;
+import com.katya.app.dto.request.PasswordChangeRequest;
 import com.katya.app.dto.response.LoginResponse;
 import com.katya.app.security.UserPrincipal;
 import com.katya.app.service.AuthService;
@@ -52,6 +53,15 @@ public class AuthController {
                 .build();
 
         return ResponseBuilder.success(userInfo);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @Valid @RequestBody PasswordChangeRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        authService.changePassword(userPrincipal.getId(), request);
+        return ResponseBuilder.success("Password changed successfully");
     }
 
     // Inner DTOs
