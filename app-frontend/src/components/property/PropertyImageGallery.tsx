@@ -1,81 +1,81 @@
-// app-frontend/src/components/property/PropertyImageGallery.tsx - FIXED THUMBNAILS
-import React, { useState } from 'react'
+// app-frontend/src/components/property/PropertyImageGallery.tsx
+import React, { useState } from "react";
 import {
   Box,
   Dialog,
   DialogContent,
   IconButton,
   Typography,
-  useMediaQuery,
-  useTheme
-} from '@mui/material'
+  useTheme,
+} from "@mui/material";
 import {
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowForward as ArrowForwardIcon
-} from '@mui/icons-material'
-import type { PropertyImage } from '../../types'
+  ArrowForward as ArrowForwardIcon,
+} from "@mui/icons-material";
+import type { PropertyImage } from "../../types";
 
 interface PropertyImageGalleryProps {
-  images: PropertyImage[]
+  images: PropertyImage[];
 }
 
-const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) => {
-  const theme = useTheme()
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({
+  images,
+}) => {
+  const theme = useTheme();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Sort images by display order
-  const sortedImages = [...images].sort((a, b) => a.displayOrder - b.displayOrder)
+  const sortedImages = [...images].sort(
+    (a, b) => a.displayOrder - b.displayOrder
+  );
 
   const handleImageClick = (index: number) => {
-    setCurrentImageIndex(index)
-    setLightboxOpen(true)
-  }
+    setCurrentImageIndex(index);
+    setLightboxOpen(true);
+  };
 
   const handleClose = () => {
-    setLightboxOpen(false)
-  }
+    setLightboxOpen(false);
+  };
 
   const handlePrevious = () => {
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? sortedImages.length - 1 : prev - 1
-    )
-  }
+    );
+  };
 
   const handleNext = () => {
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === sortedImages.length - 1 ? 0 : prev + 1
-    )
-  }
+    );
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'ArrowLeft') {
-      handlePrevious()
-    } else if (event.key === 'ArrowRight') {
-      handleNext()
-    } else if (event.key === 'Escape') {
-      handleClose()
+    if (event.key === "ArrowLeft") {
+      handlePrevious();
+    } else if (event.key === "ArrowRight") {
+      handleNext();
+    } else if (event.key === "Escape") {
+      handleClose();
     }
-  }
+  };
 
   if (!sortedImages.length) {
     return (
-      <Box 
-        sx={{ 
-          height: 400, 
-          bgcolor: 'grey.100', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          borderRadius: 1
+      <Box
+        sx={{
+          height: 400,
+          bgcolor: "grey.100",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 1,
         }}
       >
-        <Typography color="text.secondary">
-          No images available
-        </Typography>
+        <Typography color="text.secondary">No images available</Typography>
       </Box>
-    )
+    );
   }
 
   return (
@@ -84,12 +84,12 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
         {/* Main Image */}
         <Box
           sx={{
-            position: 'relative',
+            position: "relative",
             height: 400,
-            cursor: 'pointer',
+            cursor: "pointer",
             borderRadius: 1,
-            overflow: 'hidden',
-            mb: 2
+            overflow: "hidden",
+            mb: 2,
           }}
           onClick={() => handleImageClick(currentImageIndex)}
         >
@@ -97,29 +97,29 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
             src={sortedImages[currentImageIndex].imageUrl}
             alt={sortedImages[currentImageIndex].originalName}
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
             }}
           />
-          
+
           {/* Navigation arrows */}
           {sortedImages.length > 1 && (
             <>
               <IconButton
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handlePrevious()
+                  e.stopPropagation();
+                  handlePrevious();
                 }}
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   left: 16,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  bgcolor: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)'
-                  }
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  bgcolor: "rgba(255, 255, 255, 0.8)",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.9)",
+                  },
                 }}
               >
                 <ArrowBackIcon />
@@ -127,18 +127,18 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
 
               <IconButton
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handleNext()
+                  e.stopPropagation();
+                  handleNext();
                 }}
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   right: 16,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  bgcolor: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)'
-                  }
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  bgcolor: "rgba(255, 255, 255, 0.8)",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.9)",
+                  },
                 }}
               >
                 <ArrowForwardIcon />
@@ -149,71 +149,73 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
           {/* Image counter */}
           <Box
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: 16,
               right: 16,
-              bgcolor: 'rgba(0, 0, 0, 0.6)',
-              color: 'white',
+              bgcolor: "rgba(0, 0, 0, 0.6)",
+              color: "white",
               px: 2,
               py: 0.5,
               borderRadius: 1,
-              fontSize: '0.875rem'
+              fontSize: "0.875rem",
             }}
           >
             {currentImageIndex + 1} / {sortedImages.length}
           </Box>
         </Box>
 
-        {/* 🔧 FIXED: Thumbnail Navigation with consistent sizes */}
+        {/* Thumbnail Navigation */}
         {sortedImages.length > 1 && (
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 1, 
-            overflowX: 'auto', 
-            pb: 1,
-            '&::-webkit-scrollbar': {
-              height: 8,
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: 'rgba(0,0,0,0.1)',
-              borderRadius: 4,
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              borderRadius: 4,
-            }
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              overflowX: "auto",
+              pb: 1,
+              "&::-webkit-scrollbar": {
+                height: 8,
+              },
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: "rgba(0,0,0,0.1)",
+                borderRadius: 4,
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(0,0,0,0.3)",
+                borderRadius: 4,
+              },
+            }}
+          >
             {sortedImages.map((image, index) => (
               <Box
                 key={image.id}
                 onClick={() => setCurrentImageIndex(index)}
                 sx={{
-                  // 🔧 FIXED: Consistent thumbnail dimensions
-                  minWidth: 100,        // Fixed width
-                  width: 100,           // Fixed width
-                  height: 70,           // Fixed height
-                  cursor: 'pointer',
+                  minWidth: 100,
+                  width: 100,
+                  height: 70,
+                  cursor: "pointer",
                   borderRadius: 1,
-                  overflow: 'hidden',
+                  overflow: "hidden",
                   border: 2,
-                  borderColor: currentImageIndex === index ? 'primary.main' : 'divider',
+                  borderColor:
+                    currentImageIndex === index ? "primary.main" : "divider",
                   opacity: currentImageIndex === index ? 1 : 0.7,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
+                  transition: "all 0.2s ease",
+                  "&:hover": {
                     opacity: 1,
-                    borderColor: 'primary.main'
+                    borderColor: "primary.main",
                   },
-                  flexShrink: 0         // Prevent shrinking
+                  flexShrink: 0,
                 }}
               >
                 <img
                   src={image.imageUrl}
                   alt={image.originalName}
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',   // 🔧 FIXED: Crop to fill container
-                    display: 'block'
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
                   }}
                 />
               </Box>
@@ -229,29 +231,44 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
         maxWidth={false}
         fullWidth
         sx={{
-          '& .MuiDialog-paper': {
-            bgcolor: 'black',
-            boxShadow: 'none',
-            maxHeight: '100vh',
-            m: 0
-          }
+          "& .MuiDialog-paper": {
+            bgcolor: "rgba(0, 0, 0, 0.9)",
+            boxShadow: "none",
+            maxHeight: "100vh",
+            maxWidth: "100vw",
+            m: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          },
         }}
         onKeyDown={handleKeyDown}
       >
-        <DialogContent sx={{ p: 0, position: 'relative', bgcolor: 'black' }}>
+        <DialogContent
+          sx={{
+            p: 0,
+            position: "relative",
+            bgcolor: "transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+            width: "100vw",
+          }}
+        >
           {/* Close button */}
           <IconButton
             onClick={handleClose}
             sx={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              color: 'white',
-              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              position: "absolute",
+              top: 40, // 👈 tăng khoảng cách
+              right: 40, // 👈 tăng khoảng cách
+              color: "white",
+              bgcolor: "rgba(0, 0, 0, 0.6)",
               zIndex: 2,
-              '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.7)'
-              }
+              "&:hover": {
+                bgcolor: "rgba(0, 0, 0, 0.8)",
+              },
             }}
           >
             <CloseIcon />
@@ -263,16 +280,16 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
               <IconButton
                 onClick={handlePrevious}
                 sx={{
-                  position: 'absolute',
-                  left: 16,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'white',
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  position: "absolute",
+                  left: 40, // 👈 tăng khoảng cách
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "white",
+                  bgcolor: "rgba(0, 0, 0, 0.6)",
                   zIndex: 2,
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.7)'
-                  }
+                  "&:hover": {
+                    bgcolor: "rgba(0, 0, 0, 0.8)",
+                  },
                 }}
               >
                 <ArrowBackIcon />
@@ -281,16 +298,16 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
               <IconButton
                 onClick={handleNext}
                 sx={{
-                  position: 'absolute',
-                  right: 16,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'white',
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  position: "absolute",
+                  right: 40, // 👈 tăng khoảng cách
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "white",
+                  bgcolor: "rgba(0, 0, 0, 0.6)",
                   zIndex: 2,
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.7)'
-                  }
+                  "&:hover": {
+                    bgcolor: "rgba(0, 0, 0, 0.8)",
+                  },
                 }}
               >
                 <ArrowForwardIcon />
@@ -303,24 +320,26 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
             src={sortedImages[currentImageIndex]?.imageUrl}
             alt={sortedImages[currentImageIndex]?.originalName}
             style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain'
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              borderRadius: "8px",
             }}
           />
 
           {/* Image counter */}
           <Box
             sx={{
-              position: 'absolute',
-              bottom: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              color: 'white',
-              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              position: "absolute",
+              bottom: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "white",
+              bgcolor: "rgba(0, 0, 0, 0.6)",
               px: 2,
               py: 1,
-              borderRadius: 1
+              borderRadius: 1,
+              backdropFilter: "blur(4px)",
             }}
           >
             <Typography variant="body2">
@@ -330,7 +349,7 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ images }) =
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};
 
-export default PropertyImageGallery
+export default PropertyImageGallery;

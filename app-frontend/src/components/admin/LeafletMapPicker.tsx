@@ -22,6 +22,7 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retry, setRetry] = useState(0)
 
   // Default coordinates (Hanoi)
   const defaultLat = 21.0285
@@ -33,115 +34,159 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         setLoading(true)
         setError(null)
 
+        // Check if Leaflet CSS is already loaded
         if (!document.querySelector('link[href*="leaflet.css"]')) {
           const cssLink = document.createElement('link')
           cssLink.rel = 'stylesheet'
           cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+          // Remove integrity check that might be causing issues
           document.head.appendChild(cssLink)
+          
+          // Wait for CSS to load
+          await new Promise((resolve) => {
+            cssLink.onload = resolve
+            cssLink.onerror = resolve // Don't fail on CSS error, continue
+            setTimeout(resolve, 2000) // Longer fallback timeout
+          })
         }
 
+        // Check if Leaflet JS is already loaded
         if (!(window as any).L) {
           const script = document.createElement('script')
           script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+          // Remove integrity check that might be causing issues
+          
           await new Promise((resolve, reject) => {
             script.onload = resolve
-            script.onerror = reject
+            script.onerror = () => {
+              // Try fallback CDN
+              const fallbackScript = document.createElement('script')
+              fallbackScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
+              fallbackScript.onload = resolve
+              fallbackScript.onerror = reject
+              document.head.appendChild(fallbackScript)
+            }
             document.head.appendChild(script)
           })
         }
 
+        // Small delay to ensure everything is ready
+        await new Promise(resolve => setTimeout(resolve, 100))
+
         initializeMap()
       } catch (err) {
         console.error('Failed to load Leaflet:', err)
-        setError('Không tải được bản đồ, vui lòng thử lại.')
+        setError('Không thể tải bản đồ. Vui lòng kiểm tra kết nối mạng và thử lại.')
       } finally {
         setLoading(false)
       }
     }
 
     loadLeaflet()
-  }, [])
+  }, [retry])
 
   useEffect(() => {
     if (mapInstanceRef.current && markerRef.current && typeof latitude === 'number' && typeof longitude === 'number') {
       const L = (window as any).L
-      markerRef.current.setLatLng([latitude, longitude])
-      mapInstanceRef.current.setView([latitude, longitude], 16)
+      if (L) {
+        markerRef.current.setLatLng([latitude, longitude])
+        mapInstanceRef.current.setView([latitude, longitude], 16)
+      }
     }
   }, [latitude, longitude])
 
   const initializeMap = () => {
-    if (!mapRef.current || !(window as any).L) return
+    if (!mapRef.current || !(window as any).L) {
+      console.error('Map container or Leaflet not available')
+      return
+    }
 
-    const L = (window as any).L
-    const initialLat = typeof latitude === 'number' ? latitude : defaultLat
-    const initialLng = typeof longitude === 'number' ? longitude : defaultLng
+    try {
+      const L = (window as any).L
+      const initialLat = typeof latitude === 'number' ? latitude : defaultLat
+      const initialLng = typeof longitude === 'number' ? longitude : defaultLng
 
-    const map = L.map(mapRef.current).setView([initialLat, initialLng], 16)
+      // Clear any existing map
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+      }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
-    }).addTo(map)
+      // Create map
+      const map = L.map(mapRef.current, {
+        center: [initialLat, initialLng],
+        zoom: (typeof latitude === 'number' && typeof longitude === 'number') ? 16 : 12,
+        zoomControl: true,
+        attributionControl: true
+      })
 
-    const customIcon = L.divIcon({
-      html: `
-        <div style="
-          background: #E53E3E;
-          width: 28px;
-          height: 28px;
-          border-radius: 50% 50% 50% 0;
-          border: 3px solid white;
-          transform: rotate(-45deg);
-          box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-          cursor: move;
-        ">
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(map)
+
+      // Create custom icon
+      const customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `
           <div style="
-            color: white;
-            font-size: 14px;
-            line-height: 22px;
-            text-align: center;
-            transform: rotate(45deg);
-          ">📍</div>
-        </div>
-      `,
-      className: 'custom-admin-marker',
-      iconSize: [28, 28],
-      iconAnchor: [14, 28]
-    })
+            background: #E53E3E;
+            width: 24px;
+            height: 24px;
+            border-radius: 50% 50% 50% 0;
+            border: 3px solid white;
+            transform: rotate(-45deg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          ">
+            <div style="
+              width: 6px;
+              height: 6px;
+              background: white;
+              border-radius: 50%;
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+            "></div>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -24]
+      })
 
-    const marker = L.marker([initialLat, initialLng], { 
-      icon: customIcon,
-      draggable: true
-    }).addTo(map)
+      // Add marker
+      const marker = L.marker([initialLat, initialLng], {
+        icon: customIcon,
+        draggable: true
+      }).addTo(map)
 
-    map.on('click', (e: any) => {
-      const { lat, lng } = e.latlng
-      marker.setLatLng([lat, lng])
-      onLocationChange(lat, lng)
-    })
+      // Map click handler
+      map.on('click', (e: any) => {
+        const { lat, lng } = e.latlng
+        marker.setLatLng([lat, lng])
+        onLocationChange(lat, lng)
+      })
 
-    marker.on('dragend', (e: any) => {
-      const { lat, lng } = e.target.getLatLng()
-      onLocationChange(lat, lng)
-    })
+      // Marker drag handler
+      marker.on('dragend', (e: any) => {
+        const { lat, lng } = e.target.getLatLng()
+        onLocationChange(lat, lng)
+      })
 
-    mapInstanceRef.current = map
-    markerRef.current = marker
-  }
+      mapInstanceRef.current = map
+      markerRef.current = marker
 
-  const resetToDefault = () => {
-    if (mapInstanceRef.current && markerRef.current) {
-      markerRef.current.setLatLng([defaultLat, defaultLng])
-      mapInstanceRef.current.setView([defaultLat, defaultLng], 12)
-      onLocationChange(defaultLat, defaultLng)
+      console.log('Leaflet map initialized successfully')
+    } catch (err) {
+      console.error('Failed to initialize Leaflet map:', err)
+      setError('Không thể khởi tạo bản đồ. Vui lòng thử lại.')
     }
   }
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setError('Trình duyệt không hỗ trợ định vị GPS.')
-      resetToDefault()
+      setError('Trình duyệt không hỗ trợ định vị.')
       return
     }
 
@@ -149,7 +194,8 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       (position) => {
         const lat = position.coords.latitude
         const lng = position.coords.longitude
-        if (mapInstanceRef.current && markerRef.current) {
+        
+        if (mapInstanceRef.current && markerRef.current && (window as any).L) {
           markerRef.current.setLatLng([lat, lng])
           mapInstanceRef.current.setView([lat, lng], 16)
           onLocationChange(lat, lng)
@@ -159,7 +205,7 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       (err) => {
         console.error('Geolocation error:', err)
         if (err.code === 1) {
-          setError('Bạn đã từ chối quyền truy cập vị trí. Hãy cho phép trong cài đặt trình duyệt.')
+          setError('Vui lòng cho phép truy cập vị trí trong cài đặt trình duyệt.')
         } else if (err.code === 2) {
           setError('Không thể xác định vị trí. Vui lòng thử lại.')
         } else if (err.code === 3) {
@@ -167,22 +213,78 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         } else {
           setError('Không thể lấy vị trí.')
         }
-        resetToDefault()
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     )
   }
 
+  const resetToDefault = () => {
+    if (mapInstanceRef.current && markerRef.current && (window as any).L) {
+      markerRef.current.setLatLng([defaultLat, defaultLng])
+      mapInstanceRef.current.setView([defaultLat, defaultLng], 12)
+      onLocationChange(defaultLat, defaultLng)
+      setError(null)
+    }
+  }
+
+  const handleRetry = () => {
+    setRetry(prev => prev + 1)
+  }
+
   if (loading) {
     return (
-      <Paper sx={{ p: 2, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="text.secondary">Đang tải bản đồ...</Typography>
+      <Paper sx={{ 
+        p: 3, 
+        height, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        bgcolor: 'grey.50',
+        border: '1px solid',
+        borderColor: 'grey.200'
+      }}>
+        <Box textAlign="center">
+          <Typography color="text.secondary" gutterBottom>
+            Đang tải bản đồ...
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Vui lòng đợi trong giây lát
+          </Typography>
+        </Box>
+      </Paper>
+    )
+  }
+
+  if (error) {
+    return (
+      <Paper sx={{ 
+        p: 3, 
+        height,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'grey.50',
+        border: '1px solid',
+        borderColor: 'grey.200'
+      }}>
+        <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
+          {error}
+        </Alert>
+        
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+          Bạn vẫn có thể nhập tọa độ thủ công ở các ô bên trên.
+        </Typography>
+        
+        <Button variant="outlined" onClick={handleRetry} startIcon={<RefreshIcon />}>
+          Thử lại
+        </Button>
       </Paper>
     )
   }
 
   return (
-    <Paper sx={{ overflow: 'hidden', borderRadius: 1 }}>
+    <Paper sx={{ overflow: 'hidden', borderRadius: 1, border: '1px solid', borderColor: 'grey.200' }}>
       <Box
         ref={mapRef}
         sx={{
@@ -191,6 +293,10 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
           '& .leaflet-control-attribution': {
             fontSize: '10px',
             background: 'rgba(255,255,255,0.8)'
+          },
+          '& .custom-marker': {
+            background: 'none !important',
+            border: 'none !important'
           }
         }}
       />
@@ -213,11 +319,6 @@ const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
             <Typography variant="caption" color="text.secondary">
               {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </Typography>
-          )}
-          {error && (
-            <Alert severity="warning" sx={{ mt: 1, p: 0.5 }}>
-              {error}
-            </Alert>
           )}
         </Box>
 

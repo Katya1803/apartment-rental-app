@@ -1,9 +1,11 @@
+// app-frontend/src/pages/admin/AdminPropertyForm.tsx
 import React, { useState, useEffect } from 'react'
 
 import {
   Checkbox,
   ListItemText,
-  OutlinedInput
+  OutlinedInput,
+  FormHelperText
 } from '@mui/material'
 
 import {
@@ -41,9 +43,8 @@ import { PropertyService } from '../../services/propertyService'
 import { AmenityService } from '../../services/amenityService'
 import { ROUTES } from '../../config/constants'
 import PropertyImageUpload from '../../components/admin/PropertyImageUpload'
-import GoogleMapPicker from '../../components/admin/GoogleMapPicker'
 import type { PropertyDetail, PropertyType, PropertyStatus, Amenity, PropertyImage } from '../../types'
-import LeafletMapPicker from '../../components/admin/LeafletMapPicker'
+import LeafletMapPickerLocal from '../../components/admin/LeafletMapPickerLocal'
 
 
 interface PropertyFormData {
@@ -106,7 +107,7 @@ const AdminPropertyForm: React.FC = () => {
     bedrooms: undefined,
     bathrooms: undefined,
     floorNo: undefined,
-    petPolicy: '',
+    petPolicy: 'AVAILABLE', // Mặc định là "Còn trống"
     viewDesc: '',
     latitude: undefined,
     longitude: undefined,
@@ -139,7 +140,7 @@ const AdminPropertyForm: React.FC = () => {
             bedrooms: property.bedrooms || undefined,
             bathrooms: property.bathrooms || undefined,
             floorNo: property.floorNo || undefined,
-            petPolicy: property.petPolicy || '',
+            petPolicy: property.petPolicy || 'AVAILABLE',
             viewDesc: property.viewDesc || '',
             latitude: property.latitude || undefined,
             longitude: property.longitude || undefined,
@@ -218,58 +219,53 @@ const AdminPropertyForm: React.FC = () => {
   }
 
   const generateSlugFromTitle = () => {
-    const title = formData.translations.en.title || formData.translations.vi.title
-    if (title) {
-      const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-      handleFieldChangeWithValidation('slug', slug)
-    }
+    const title = formData.translations.en.title || formData.translations.vi.title || formData.translations.ja.title
+    if (!title) return
+    
+    const slug = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+    
+    handleFieldChangeWithValidation('slug', slug)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    
+    setValidationErrors({})
     const slugError = validateSlug(formData.slug)
     const priceError = validatePrice(formData.priceMonth)
     const translationError = validateTranslations()
-
-    const newValidationErrors: Record<string, string> = {}
-    if (slugError) newValidationErrors.slug = slugError
-    if (priceError) newValidationErrors.priceMonth = priceError
-    if (translationError) newValidationErrors.translations = translationError
-
-    if (Object.keys(newValidationErrors).length > 0) {
-      setValidationErrors(newValidationErrors)
-      setError('Please fix the validation errors above')
+    
+    const errors: Record<string, string> = {}
+    if (slugError) errors.slug = slugError
+    if (priceError) errors.priceMonth = priceError
+    if (translationError) errors.translations = translationError
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
-
-    const price = parseFloat(formData.priceMonth)
+    
     setSaving(true)
-    setError(null)
-    setValidationErrors({})
-
     try {
       const validTranslations = Object.entries(formData.translations)
-        .filter(([, t]) => t.title.trim())
-        .reduce((acc, [locale, t]) => {
-          acc[locale] = {
-            title: t.title.trim(),
-            descriptionMd: t.descriptionMd || undefined,
-            addressText: t.addressText || undefined
-          }
-          return acc
-        }, {} as any)
+        .filter(([_, t]) => t.title.trim())
+        .reduce((acc, [locale, translation]) => ({
+          ...acc,
+          [locale]: translation
+        }), {})
 
       const payload = {
         slug: formData.slug.trim(),
         code: formData.code?.trim() || undefined,
-        propertyType: 'ROOM' as PropertyType,
-        priceMonth: price,
+        propertyType: formData.propertyType,
+        priceMonth: parseFloat(formData.priceMonth),
         areaSqm: formData.areaSqm ?? undefined,
         bedrooms: formData.bedrooms ?? undefined,
         bathrooms: formData.bathrooms ?? undefined,
@@ -468,13 +464,18 @@ const AdminPropertyForm: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Chính sách thú cưng"
-                    value={formData.petPolicy}
-                    onChange={e => handleFieldChangeWithValidation('petPolicy', e.target.value)}
-                    helperText="e.g., Pets allowed, No pets, Small pets only"
-                  />
+                  <FormControl fullWidth>
+                    <InputLabel>Tình trạng cho thuê</InputLabel>
+                    <Select
+                      value={formData.petPolicy || 'AVAILABLE'}
+                      onChange={e => handleFieldChangeWithValidation('petPolicy', e.target.value)}
+                      label="Tình trạng cho thuê"
+                    >
+                      <MenuItem value="AVAILABLE">Còn trống</MenuItem>
+                      <MenuItem value="RENTED">Đang cho thuê</MenuItem>
+                    </Select>
+                    <FormHelperText>Chọn tình trạng hiện tại của phòng</FormHelperText>
+                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -591,71 +592,60 @@ const AdminPropertyForm: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LocationIcon />
-                    Địa chỉ trên bản đồ
+                  <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+                    Chọn vị trí trên bản đồ
                   </Typography>
-                <LeafletMapPicker
-                  latitude={formData.latitude}
-                  longitude={formData.longitude}
-                  onLocationChange={handleLocationChange}
-                  height={350}
-                />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <HomeIcon />
-                    Nội dung tiện ích
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🛎️ Dịch vụ đi kèm
-                    <Typography variant="body2" color="text.secondary">
-                      (Các dịch vụ đi kèm với phòng cho thuê)
-                    </Typography>
-                  </Typography>
-                  
-                  <Autocomplete
-                    multiple
-                    options={amenities.filter(a => a.key.startsWith('IS_'))}
-                    getOptionLabel={(option) => option.label}
-                    value={amenities.filter(a => a.key.startsWith('IS_') && formData.amenityIds.includes(a.id))}
-                    onChange={(event, newValue) => {
-                      // Keep existing interior facilities + new included services
-                      const interiorFacilities = amenities
-                        .filter(a => a.key.startsWith('IF_') && formData.amenityIds.includes(a.id))
-                        .map(a => a.id)
-                      
-                      const selectedIncludedServices = newValue.map(a => a.id)
-                      handleFieldChangeWithValidation('amenityIds', [...selectedIncludedServices, ...interiorFacilities])
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Chọn các dịch vụ đi kèm"
-                        placeholder="Chọn các dịch vụ đi kèm..."
-                        helperText="Chọn các dịch vụ đi kèm trong giá thuê (tiện ích, quản lý, v.v.)"
-                      />
-                    )}
+                  <LeafletMapPickerLocal
+                    latitude={formData.latitude || 21.0285}
+                    longitude={formData.longitude || 105.8542}
+                    onLocationChange={handleLocationChange}
                   />
                 </Grid>
 
-                {/* Show Selected Included Services */}
+                <Grid item xs={12} sx={{ mt: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Tiện nghi
+                  </Typography>
+                  <FormControl fullWidth>
+                    <Autocomplete
+                      multiple
+                      value={amenities.filter(a => formData.amenityIds.includes(a.id))}
+                      onChange={(_, newValue) => 
+                        handleFieldChangeWithValidation('amenityIds', newValue.map(a => a.id))
+                      }
+                      options={amenities}
+                      getOptionLabel={(option) => option.label}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Chọn tiện nghi"
+                          placeholder="Tìm kiếm tiện nghi..."
+                        />
+                      )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            variant="outlined"
+                            label={option.label}
+                            {...getTagProps({ index })}
+                            key={option.id}
+                          />
+                        ))
+                      }
+                    />
+                  </FormControl>
+                </Grid>
+
+                {/* Amenities Groups Display */}
                 {formData.amenityIds.filter(id => 
                   amenities.find(a => a.id === id && a.key.startsWith('IS_'))
                 ).length > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Các dịch vụ đi kèm đã được chọn  ({formData.amenityIds.filter(id => 
-                        amenities.find(a => a.id === id && a.key.startsWith('IS_'))
-                      ).length}):
+                      Dịch vụ đi kèm ({
+                        formData.amenityIds.filter(id => 
+                          amenities.find(a => a.id === id && a.key.startsWith('IS_'))
+                        ).length}):
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {amenities
@@ -673,49 +663,15 @@ const AdminPropertyForm: React.FC = () => {
                   </Grid>
                 )}
 
-                {/* Interior Facilities Section */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🏠 Tiện nghi nội thất
-                    <Typography variant="body2" color="text.secondary">
-                        (Đồ nội thất và thiết bị trong phòng)
-                    </Typography>
-                  </Typography>
-                  
-                  <Autocomplete
-                    multiple
-                    options={amenities.filter(a => a.key.startsWith('IF_'))}
-                    getOptionLabel={(option) => option.label}
-                    value={amenities.filter(a => a.key.startsWith('IF_') && formData.amenityIds.includes(a.id))}
-                    onChange={(event, newValue) => {
-                      // Keep existing included services + new interior facilities
-                      const includedServices = amenities
-                        .filter(a => a.key.startsWith('IS_') && formData.amenityIds.includes(a.id))
-                        .map(a => a.id)
-                      
-                      const selectedInteriorFacilities = newValue.map(a => a.id)
-                      handleFieldChangeWithValidation('amenityIds', [...includedServices, ...selectedInteriorFacilities])
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Chọn các tiện nghi nội thất"
-                        placeholder="Chọn đồ nội thất và thiết bị..."
-                        helperText="Chọn đồ nội thất và thiết bị có sẵn trong phòng"
-                      />
-                    )}
-                  />
-                </Grid>
-
-                {/* Show Selected Interior Facilities */}
                 {formData.amenityIds.filter(id => 
                   amenities.find(a => a.id === id && a.key.startsWith('IF_'))
                 ).length > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Các đồ nội thất đã chọn ({formData.amenityIds.filter(id => 
-                        amenities.find(a => a.id === id && a.key.startsWith('IF_'))
-                      ).length}):
+                      Đồ nội thất ({
+                        formData.amenityIds.filter(id => 
+                          amenities.find(a => a.id === id && a.key.startsWith('IF_'))
+                        ).length}):
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {amenities

@@ -1,7 +1,7 @@
 // src/services/authService.ts - FIXED VERSION
-import { publicApi, adminApi } from '../config/axios'
-import { API_ENDPOINTS } from '../config/constants'
-import type { LoginRequest, LoginResponse, ApiResponse } from '../types'
+import { publicApi, adminApi } from "../config/axios";
+import { API_ENDPOINTS } from "../config/constants";
+import type { LoginRequest, LoginResponse, ApiResponse } from "../types";
 
 export class AuthService {
   
@@ -9,17 +9,17 @@ export class AuthService {
     // Use publicApi with correct endpoint path
     // Backend: POST /api/auth/login (not /api/admin/auth/login)
     const response = await publicApi.post<ApiResponse<LoginResponse>>(
-      API_ENDPOINTS.AUTH.LOGIN,  // This resolves to '/auth/login'
+      API_ENDPOINTS.AUTH.LOGIN, // This resolves to '/auth/login'
       credentials
-    )
+    );
     
-    return response.data.data
+    return response.data.data;
   }
 
   static async logout(): Promise<void> {
     try {
       // Use publicApi for logout
-      await publicApi.post<ApiResponse<void>>(API_ENDPOINTS.AUTH.LOGOUT)
+      await publicApi.post<ApiResponse<void>>(API_ENDPOINTS.AUTH.LOGOUT);
     } catch {
       // Ignore logout errors - token will be removed locally anyway
     }
@@ -30,19 +30,29 @@ export class AuthService {
     const response = await publicApi.post<ApiResponse<LoginResponse>>(
       API_ENDPOINTS.AUTH.REFRESH,
       { refreshToken }
-    )
+    );
     
-    return response.data.data
+    return response.data.data;
   }
 
   static async changePassword(
-    currentPassword: string, 
+    currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    // Use adminApi for change password (requires authentication)
-    await adminApi.post<ApiResponse<void>>(
-      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
-      { currentPassword, newPassword }
-    )
+    const token = localStorage.getItem('access_token');
+    
+    await publicApi.post<ApiResponse<void>>(
+      API_ENDPOINTS.AUTH.CHANGE_PASSWORD, // '/auth/change-password'
+      {
+        currentPassword,
+        newPassword,
+        confirmPassword: newPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
   }
 }

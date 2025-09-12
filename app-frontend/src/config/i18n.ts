@@ -25,6 +25,8 @@ const resources = {
       previous: 'Trước đó',
       viewDetails: 'Xem chi tiết',
       no_guides_available: 'Chưa có hướng dẫn nào',
+      status : 'Trạng thái',
+      read_more: 'Đọc thêm',
 
       // Navigation
       home: 'Trang chủ',
@@ -171,6 +173,8 @@ const resources = {
       previous: 'Previous',
       viewDetails: 'View Details',
       no_guides_available: 'No guides available',
+      status: 'Status',
+      read_more: 'Read more',
 
       // Navigation
       home: 'Home',
@@ -317,6 +321,8 @@ const resources = {
       previous: '前へ',
       viewDetails: '詳細を見る',
       no_guides_available: '利用可能なガイドがありません',
+      status : '状態',
+      read_more: '続きを読む',
 
       // Navigation
       home: 'ホーム',

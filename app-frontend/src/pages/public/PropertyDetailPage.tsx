@@ -1,4 +1,4 @@
-// app-frontend/src/pages/public/PropertyDetailPage.tsx - FIXED WITH FAVORITES + AMENITIES GROUPS
+// app-frontend/src/pages/public/PropertyDetailPage.tsx
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +15,8 @@ import {
   IconButton,
   Button,
   Divider,
-  Snackbar
+  Snackbar,
+  Chip
 } from '@mui/material'
 import {
   ArrowBack as ArrowBackIcon,
@@ -25,7 +26,7 @@ import {
   LocationOn as LocationIcon,
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
-  Pets as PetsIcon
+  Home as HomeIcon
 } from '@mui/icons-material'
 import { PropertyService } from '../../services/propertyService'
 import { FavoritesService } from '../../services/favoritesService'
@@ -48,6 +49,20 @@ const PropertyDetailPage: React.FC = () => {
   const [favoriteMessage, setFavoriteMessage] = useState('')
 
   const currentLocale = i18n.language as Locale
+
+  // Function để hiển thị rental status
+  const getRentalStatusLabel = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return currentLocale === 'vi' ? 'Còn trống' : 
+               currentLocale === 'ja' ? '空室あり' : 'Available';
+      case 'RENTED':
+        return currentLocale === 'vi' ? 'Đang cho thuê' : 
+               currentLocale === 'ja' ? '賃貸中' : 'Rented';
+      default:
+        return status;
+    }
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -81,29 +96,31 @@ const PropertyDetailPage: React.FC = () => {
     setIsFavorite(newIsFavorite)
     setFavoriteMessage(
       newIsFavorite 
-        ? t('favouriteAdded') 
+        ? t('favouriteAdded')
         : t('favouriteRemoved')
     )
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(price)
+    return currentLocale === 'vi' 
+      ? `${(price * 24000).toLocaleString('vi-VN')} VND`
+      : `$${price.toLocaleString()}`
   }
 
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Skeleton variant="text" width="20%" height={40} sx={{ mb: 2 }} />
-        <Grid container spacing={3}>
+        <Box sx={{ mb: 3 }}>
+          <Skeleton variant="text" width={200} height={40} />
+        </Box>
+        <Grid container spacing={4}>
           <Grid item xs={12} md={8}>
             <Skeleton variant="rectangular" height={400} sx={{ mb: 3 }} />
+            <Skeleton variant="text" height={40} />
+            <Skeleton variant="text" height={60} />
           </Grid>
           <Grid item xs={12} md={4}>
-            <Skeleton variant="rectangular" height={400} />
+            <Skeleton variant="rectangular" height={300} />
           </Grid>
         </Grid>
       </Container>
@@ -116,64 +133,41 @@ const PropertyDetailPage: React.FC = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error || 'Property not found'}
         </Alert>
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-        >
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
           {t('back')}
         </Button>
       </Container>
     )
   }
 
-  const translation = property.translations[currentLocale] || 
-                     property.translations['vi'] || 
-                     Object.values(property.translations)[0]
+  const translation = property.translations[currentLocale] || property.translations['vi'] || property.translations['en']
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Back Button */}
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate(-1)}
-        sx={{ mb: 3 }}
-      >
-        {t('back')}
-      </Button>
+      <Box sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+          {t('back')}
+        </Button>
+      </Box>
 
-      <Grid container spacing={3}>
-        {/* Left - Images */}
+      <Grid container spacing={4}>
+        {/* Main Content */}
         <Grid item xs={12} md={8}>
-          {property.images && property.images.length > 0 ? (
-            <PropertyImageGallery images={property.images} />
-          ) : (
-            <Box 
-              sx={{ 
-                height: 400, 
-                bgcolor: 'grey.100', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                borderRadius: 1
-              }}
-            >
-              <Stack alignItems="center" spacing={2}>
-                <Typography variant="h1" fontSize="4rem">
-                  🏠
-                </Typography>
-                <Typography color="text.secondary">
-                  No images available
-                </Typography>
-              </Stack>
+          {/* Image Gallery */}
+          {property.images && property.images.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <PropertyImageGallery images={property.images} />
             </Box>
           )}
+
         </Grid>
 
-        {/* Right - Property Info Card */}
+        {/* Sidebar */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: 'fit-content', position: 'relative' }}>
-            <IconButton 
+          <Paper sx={{ p: 3, position: 'relative' }}>
+            {/* Favorite Button */}
+            <IconButton
               onClick={handleFavoriteToggle}
               color={isFavorite ? "error" : "default"}
               sx={{ 
@@ -200,7 +194,7 @@ const PropertyDetailPage: React.FC = () => {
             </Typography>
 
             <Typography variant="h4" color="primary" fontWeight="bold" sx={{ mb: 3 }}>
-              {formatPrice(property.priceMonth)}
+              {property.priceMonth}$
               <Typography component="span" variant="body1" color="text.secondary">
                 {currentLocale === 'vi' ? '/tháng' : currentLocale === 'ja' ? '/月' : '/month'}
               </Typography>
@@ -245,7 +239,21 @@ const PropertyDetailPage: React.FC = () => {
                 </Box>
               )}
 
-
+              {/* Rental Status Display */}
+              {property.petPolicy && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HomeIcon color="action" />
+                  <Typography sx={{ mr: 1 }}>
+                    <strong>{t('status')}</strong>
+                  </Typography>
+                  <Chip 
+                    label={getRentalStatusLabel(property.petPolicy)}
+                    color={property.petPolicy === 'AVAILABLE' ? 'success' : 'warning'}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+              )}
             </Stack>
 
             <Divider sx={{ mb: 3 }} />
@@ -318,7 +326,7 @@ const PropertyDetailPage: React.FC = () => {
           <LeafletMap
             latitude={property.latitude}
             longitude={property.longitude}
-            title={translation?.title || property.slug}
+            title=""
             address={translation?.addressText || property.addressLine}
           />
         </Paper>
@@ -332,7 +340,7 @@ const PropertyDetailPage: React.FC = () => {
             {t('address')}
           </Typography>
           <Typography color="text.secondary">
-            {translation?.addressText || property.addressLine}
+            
           </Typography>
         </Paper>
       )}
